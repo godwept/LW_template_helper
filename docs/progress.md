@@ -65,7 +65,25 @@ No technical limitation requiring an architecture change was encountered during 
 
 ## User-tested functionality
 
-None yet for Phase 1. The user should sync the repository and manually test the milestone below.
+### 2026-10-06 — Partial Phase 1 pass
+
+The user confirmed that after the Office interop dependency fix:
+
+- the project builds;
+- the application launches;
+- English and French templates can be selected;
+- clicking **Open Working Copies** successfully opens both temporary working copies in Microsoft Word.
+
+Remaining Phase 1 manual checks:
+
+- Top / Bottom layout;
+- Side by Side layout;
+- English Focus;
+- French Focus;
+- closing the Word session cleanly;
+- closing the manager while Word is open;
+- confirming source templates remain unchanged;
+- confirming no orphaned managed WINWORD.EXE remains.
 
 ---
 
@@ -93,7 +111,7 @@ Current fix commit:
 
 `b2d476322bb07ad5e20a607e561e914124ac0eea`
 
-**Retest required:** sync `main`, restore/build, then select both templates and click **Open Working Copies**.
+**Result:** user confirmed the project now builds and both working copies open successfully in Word.
 
 ---
 
