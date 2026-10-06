@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Word = Microsoft.Office.Interop.Word;
 
@@ -55,7 +56,7 @@ internal sealed class WordSession : IDisposable
                 AddToRecentFiles: false,
                 Visible: true);
 
-            ArrangeTopBottom();
+            ArrangeSideBySide();
         }
         catch
         {
@@ -64,36 +65,25 @@ internal sealed class WordSession : IDisposable
         }
     }
 
-    public void ArrangeTopBottom() => ArrangeTiled(topBottom: true);
-
-    public void ArrangeSideBySide() => ArrangeTiled(topBottom: false);
-
-    public void FocusEnglish() => Focus(_englishDocument);
-
-    public void FocusFrench() => Focus(_frenchDocument);
-
-    private void ArrangeTiled(bool topBottom)
+    public void ArrangeSideBySide()
     {
         EnsureOpen();
 
-        var area = Screen.FromControl(Form.ActiveForm ?? throw new InvalidOperationException("Manager window is unavailable.")).WorkingArea;
+        var manager = Form.ActiveForm ?? throw new InvalidOperationException("Manager window is unavailable.");
+        var area = Screen.FromControl(manager).WorkingArea;
         var englishWindow = GetWindow(_englishDocument);
         var frenchWindow = GetWindow(_frenchDocument);
 
         try
         {
-            if (topBottom)
-            {
-                int firstHeight = area.Height / 2;
-                Position(englishWindow, area.Left, area.Top, area.Width, firstHeight);
-                Position(frenchWindow, area.Left, area.Top + firstHeight, area.Width, area.Height - firstHeight);
-            }
-            else
-            {
-                int firstWidth = area.Width / 2;
-                Position(englishWindow, area.Left, area.Top, firstWidth, area.Height);
-                Position(frenchWindow, area.Left + firstWidth, area.Top, area.Width - firstWidth, area.Height);
-            }
+            englishWindow.WindowState = Word.WdWindowState.wdWindowStateNormal;
+            frenchWindow.WindowState = Word.WdWindowState.wdWindowStateNormal;
+
+            int leftWidth = area.Width / 2;
+            int rightWidth = area.Width - leftWidth;
+
+            PositionNative(englishWindow, area.Left, area.Top, leftWidth, area.Height);
+            PositionNative(frenchWindow, area.Left + leftWidth, area.Top, rightWidth, area.Height);
 
             englishWindow.Activate();
         }
@@ -104,13 +94,16 @@ internal sealed class WordSession : IDisposable
         }
     }
 
-    private static void Position(Word.Window window, int left, int top, int width, int height)
+    public void FocusEnglish() => Focus(_englishDocument);
+
+    public void FocusFrench() => Focus(_frenchDocument);
+
+    private static void PositionNative(Word.Window window, int left, int top, int width, int height)
     {
-        window.WindowState = Word.WdWindowState.wdWindowStateNormal;
-        window.Left = left;
-        window.Top = top;
-        window.Width = Math.Max(width, 300);
-        window.Height = Math.Max(height, 250);
+        var hwnd = new IntPtr(window.Hwnd);
+
+        if (!MoveWindow(hwnd, left, top, width, height, true))
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not position the Word window.");
     }
 
     private static void Focus(Word.Document? document)
@@ -212,4 +205,14 @@ internal sealed class WordSession : IDisposable
         Close();
         GC.SuppressFinalize(this);
     }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool MoveWindow(
+        IntPtr hWnd,
+        int x,
+        int y,
+        int width,
+        int height,
+        [MarshalAs(UnmanagedType.Bool)] bool repaint);
 }
