@@ -69,6 +69,26 @@ None yet for Phase 1. The user should sync the repository and manually test the 
 
 ---
 
+## Phase 1 Manual Test Findings
+
+### 2026-10-06 — Word interop startup failure fixed
+
+Initial manual test reached the **Open Working Copies** action but failed before Word opened with:
+
+`Could not load file or assembly 'office, Version=15.0.0.0 ...'`
+
+Cause: the project used the old `Microsoft.Office.Interop.Word` NuGet package, which introduced a runtime dependency on the Office primary interop assembly that was not resolved on the user's workstation.
+
+Fix: removed the NuGet package and changed the project to use the locally installed Microsoft Word COM type library with embedded interop types. This is appropriate for this Windows-only utility, which already requires desktop Microsoft Word to be installed.
+
+Fix commit:
+
+`04ffb30a4fc2d71491df7342d17f4888f217589d`
+
+**Retest required:** sync `main`, rebuild, select both templates, and click **Open Working Copies** again. Continue the Phase 1 checklist if Word opens successfully.
+
+---
+
 ## Known Issues / Risks
 
 ### Build/runtime not exercised by the implementation agent
