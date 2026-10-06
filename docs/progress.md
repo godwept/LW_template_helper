@@ -71,21 +71,29 @@ None yet for Phase 1. The user should sync the repository and manually test the 
 
 ## Phase 1 Manual Test Findings
 
-### 2026-10-06 — Word interop startup failure fixed
+### 2026-10-06 — Office interop dependency issues
 
-Initial manual test reached the **Open Working Copies** action but failed before Word opened with:
+The first manual run built successfully but failed at **Open Working Copies** with:
 
 `Could not load file or assembly 'office, Version=15.0.0.0 ...'`
 
-Cause: the project used the old `Microsoft.Office.Interop.Word` NuGet package, which introduced a runtime dependency on the Office primary interop assembly that was not resolved on the user's workstation.
+The Word interop package requires the Office Core PIA (`office.dll`) at runtime.
 
-Fix: removed the NuGet package and changed the project to use the locally installed Microsoft Word COM type library with embedded interop types. This is appropriate for this Windows-only utility, which already requires desktop Microsoft Word to be installed.
+Two attempted fixes were rejected during manual testing:
 
-Fix commit:
+- direct `COMReference` — does not build under the .NET 8 SDK/MSBuild path because `ResolveComReference` is unsupported there;
+- `Microsoft.Office.Core` NuGet reference — invalid package ID; restore fails because no such package exists on NuGet.
 
-`04ffb30a4fc2d71491df7342d17f4888f217589d`
+Current fix:
 
-**Retest required:** sync `main`, rebuild, select both templates, and click **Open Working Copies** again. Continue the Phase 1 checklist if Word opens successfully.
+- keep `Microsoft.Office.Interop.Word` `15.0.4797.1004`;
+- add `MSOfficeCore.Interop` `15.0.2`, which packages the required Office Core PIA and explicitly supports modern .NET targets including .NET 8.
+
+Current fix commit:
+
+`b2d476322bb07ad5e20a607e561e914124ac0eea`
+
+**Retest required:** sync `main`, restore/build, then select both templates and click **Open Working Copies**.
 
 ---
 
