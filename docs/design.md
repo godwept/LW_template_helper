@@ -106,10 +106,11 @@ English and French templates remain real Word windows.
 
 The manager provides layout commands instead of imposing one layout:
 
-- **Top / Bottom**
 - **Side by Side**
 - **English Focus**
 - **French Focus**
+
+Side by Side should use native Windows window positioning so the two Word windows occupy the left and right halves of the monitor work area accurately.
 
 The selected layout should eventually be remembered as a user preference.
 
