@@ -7,7 +7,6 @@ internal sealed class MainForm : Form
     private readonly Label _status = new() { AutoSize = true, Text = "Select English and French .docx templates." };
     private readonly Button _openButton = new() { Text = "Open Working Copies", AutoSize = true };
     private readonly Button _closeButton = new() { Text = "Close Word Session", AutoSize = true, Enabled = false };
-    private readonly Button _topBottomButton = new() { Text = "Top / Bottom", AutoSize = true, Enabled = false };
     private readonly Button _sideBySideButton = new() { Text = "Side by Side", AutoSize = true, Enabled = false };
     private readonly Button _englishFocusButton = new() { Text = "English Focus", AutoSize = true, Enabled = false };
     private readonly Button _frenchFocusButton = new() { Text = "French Focus", AutoSize = true, Enabled = false };
@@ -37,7 +36,7 @@ internal sealed class MainForm : Form
         root.Controls.Add(sessionButtons);
 
         var layoutButtons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
-        layoutButtons.Controls.AddRange([_topBottomButton, _sideBySideButton, _englishFocusButton, _frenchFocusButton]);
+        layoutButtons.Controls.AddRange([_sideBySideButton, _englishFocusButton, _frenchFocusButton]);
         root.Controls.Add(layoutButtons);
 
         var statusGroup = new GroupBox { Text = "Session status", Dock = DockStyle.Fill, Padding = new Padding(10) };
@@ -48,7 +47,6 @@ internal sealed class MainForm : Form
 
         _openButton.Click += (_, _) => OpenWorkingCopies();
         _closeButton.Click += (_, _) => CloseSession();
-        _topBottomButton.Click += (_, _) => RunWordAction(_wordSession.ArrangeTopBottom);
         _sideBySideButton.Click += (_, _) => RunWordAction(_wordSession.ArrangeSideBySide);
         _englishFocusButton.Click += (_, _) => RunWordAction(_wordSession.FocusEnglish);
         _frenchFocusButton.Click += (_, _) => RunWordAction(_wordSession.FocusFrench);
@@ -158,7 +156,6 @@ internal sealed class MainForm : Form
     {
         _openButton.Enabled = !open;
         _closeButton.Enabled = open;
-        _topBottomButton.Enabled = open;
         _sideBySideButton.Enabled = open;
         _englishFocusButton.Enabled = open;
         _frenchFocusButton.Enabled = open;
