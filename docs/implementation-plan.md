@@ -29,7 +29,7 @@ Decisions:
 - Word Interop for bookmark/range operations;
 - temporary working copies protect originals;
 - separate temporary copies for Test Mode;
-- selectable Word layouts: Top/Bottom, Side by Side, English Focus, French Focus;
+- selectable Word layouts: Side by Side, English Focus, French Focus;
 - JSON configuration;
 - deterministic user-selected bookmark ranges.
 
@@ -55,7 +55,6 @@ Build:
 - Open both working documents in Word.
 - Close Word/documents safely when session exits.
 - Basic layout commands:
-  - Top / Bottom
   - Side by Side
   - English Focus
   - French Focus
@@ -65,7 +64,7 @@ Manual verification:
 - complex existing templates visually remain intact;
 - original files remain untouched;
 - Word can save/reopen working copies normally;
-- both window layouts are usable.
+- Side by Side and focus layouts are usable.
 
 Do not proceed to complex bookmark UI until this basic Word lifecycle works reliably.
 
@@ -256,6 +255,6 @@ Implement only Phase 1.
 
 The first milestone should be:
 
-> Launch app → choose two Word documents → safe working copies are created → Word opens both → user can switch Top/Bottom and Side-by-Side → closing app cleans up without modifying originals.
+> Launch app → choose two Word documents → safe working copies are created → Word opens both → user can switch Side by Side / English Focus / French Focus → closing app cleans up without modifying originals.
 
 Once the user confirms that workflow feels right on their actual workstation/monitors, proceed to Template Type/Subtype configuration.
