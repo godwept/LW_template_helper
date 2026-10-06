@@ -1,8 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "uY6It6ALFBg=",
+  "dgSpecHash": "jYVtm7jvG9k=",
   "success": true,
   "projectFilePath": "D:\\source\\repos\\LW_template_helper\\src\\LWTemplateHelper\\LWTemplateHelper.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\stewark2\\.nuget\\packages\\microsoft.office.interop.word\\15.0.4797.1004\\microsoft.office.interop.word.15.0.4797.1004.nupkg.sha512",
+    "C:\\Users\\stewark2\\.nuget\\packages\\msofficecore.interop\\15.0.2\\msofficecore.interop.15.0.2.nupkg.sha512"
+  ],
   "logs": []
 }

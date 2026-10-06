@@ -52,6 +52,16 @@
         "net8.0-windows": {
           "framework": "net8.0-windows7.0",
           "targetAlias": "net8.0-windows",
+          "dependencies": {
+            "MSOfficeCore.Interop": {
+              "target": "Package",
+              "version": "[15.0.2, )"
+            },
+            "Microsoft.Office.Interop.Word": {
+              "target": "Package",
+              "version": "[15.0.4797.1004, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

@@ -1,11 +1,65 @@
 {
   "version": 4,
   "targets": {
-    "net8.0-windows": {}
+    "net8.0-windows": {
+      "Microsoft.Office.Interop.Word/15.0.4797.1004": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/Microsoft.Office.Interop.Word.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.Office.Interop.Word.dll": {}
+        }
+      },
+      "MSOfficeCore.Interop/15.0.2": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/Office.dll": {}
+        },
+        "runtime": {
+          "lib/net8.0/Office.dll": {}
+        }
+      }
+    }
   },
-  "libraries": {},
+  "libraries": {
+    "Microsoft.Office.Interop.Word/15.0.4797.1004": {
+      "sha512": "lavTOrMGK/o/t3+gGr7JuVrL8XDdnS0DwPLcYv/StOiysXO4L0C36IXTVtEJo1Mh9Aoxo9a8dgGcPi+faTlv0g==",
+      "type": "package",
+      "path": "microsoft.office.interop.word/15.0.4797.1004",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net20/Microsoft.Office.Interop.Word.dll",
+        "lib/netstandard2.0/Microsoft.Office.Interop.Word.dll",
+        "microsoft.office.interop.word.15.0.4797.1004.nupkg.sha512",
+        "microsoft.office.interop.word.nuspec"
+      ]
+    },
+    "MSOfficeCore.Interop/15.0.2": {
+      "sha512": "PfQVe/RY8/6F8/tWvb3XxvYcgTLGCseIjoGXdmr/xUMV86UlbCA9AAkNmW8ABdFYnxzPKKXvn21ppDEk+++6RA==",
+      "type": "package",
+      "path": "msofficecore.interop/15.0.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/net48/Office.dll",
+        "lib/net6.0/Office.dll",
+        "lib/net7.0/Office.dll",
+        "lib/net8.0/Office.dll",
+        "lib/netstandard2.0/Office.dll",
+        "ms-office.png",
+        "msofficecore.interop.15.0.2.nupkg.sha512",
+        "msofficecore.interop.nuspec"
+      ]
+    }
+  },
   "projectFileDependencyGroups": {
-    "net8.0-windows": []
+    "net8.0-windows": [
+      "MSOfficeCore.Interop >= 15.0.2",
+      "Microsoft.Office.Interop.Word >= 15.0.4797.1004"
+    ]
   },
   "packageFolders": {
     "C:\\Users\\stewark2\\.nuget\\packages": {},
@@ -59,6 +113,16 @@
       "net8.0-windows": {
         "framework": "net8.0-windows7.0",
         "targetAlias": "net8.0-windows",
+        "dependencies": {
+          "MSOfficeCore.Interop": {
+            "target": "Package",
+            "version": "[15.0.2, )"
+          },
+          "Microsoft.Office.Interop.Word": {
+            "target": "Package",
+            "version": "[15.0.4797.1004, )"
+          }
+        },
         "imports": [
           "net461",
           "net462",
