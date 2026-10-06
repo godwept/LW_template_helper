@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "LWTemplateHelper",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/LWTemplateHelper/bin/Debug/net8.0-windows/LWTemplateHelper.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/LWTemplateHelper",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    }
+  ]
+}
