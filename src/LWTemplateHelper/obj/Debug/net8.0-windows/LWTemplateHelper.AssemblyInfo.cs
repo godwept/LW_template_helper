@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LWTemplateHelper")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+79092e59d97da7baf5f41716d5c2bd8e258273de")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+94d8c8baa53af84b0a9838b995ffe850ebc7bf25")]
 [assembly: System.Reflection.AssemblyProductAttribute("LWTemplateHelper")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LWTemplateHelper")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

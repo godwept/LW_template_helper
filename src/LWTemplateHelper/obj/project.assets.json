@@ -1,37 +1,11 @@
 {
   "version": 4,
   "targets": {
-    "net8.0-windows": {
-      "Microsoft.Office.Interop.Word/15.0.4797.1004": {
-        "type": "package",
-        "compile": {
-          "lib/netstandard2.0/Microsoft.Office.Interop.Word.dll": {}
-        },
-        "runtime": {
-          "lib/netstandard2.0/Microsoft.Office.Interop.Word.dll": {}
-        }
-      }
-    }
+    "net8.0-windows": {}
   },
-  "libraries": {
-    "Microsoft.Office.Interop.Word/15.0.4797.1004": {
-      "sha512": "lavTOrMGK/o/t3+gGr7JuVrL8XDdnS0DwPLcYv/StOiysXO4L0C36IXTVtEJo1Mh9Aoxo9a8dgGcPi+faTlv0g==",
-      "type": "package",
-      "path": "microsoft.office.interop.word/15.0.4797.1004",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "lib/net20/Microsoft.Office.Interop.Word.dll",
-        "lib/netstandard2.0/Microsoft.Office.Interop.Word.dll",
-        "microsoft.office.interop.word.15.0.4797.1004.nupkg.sha512",
-        "microsoft.office.interop.word.nuspec"
-      ]
-    }
-  },
+  "libraries": {},
   "projectFileDependencyGroups": {
-    "net8.0-windows": [
-      "Microsoft.Office.Interop.Word >= 15.0.4797.1004"
-    ]
+    "net8.0-windows": []
   },
   "packageFolders": {
     "C:\\Users\\stewark2\\.nuget\\packages": {},
@@ -85,12 +59,6 @@
       "net8.0-windows": {
         "framework": "net8.0-windows7.0",
         "targetAlias": "net8.0-windows",
-        "dependencies": {
-          "Microsoft.Office.Interop.Word": {
-            "target": "Package",
-            "version": "[15.0.4797.1004, )"
-          }
-        },
         "imports": [
           "net461",
           "net462",
