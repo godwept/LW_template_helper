@@ -9,9 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Office.Interop.Word" Version="15.0.4797.1004">
-      <EmbedInteropTypes>true</EmbedInteropTypes>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Office.Core" Version="15.0.0" />
+    <PackageReference Include="Microsoft.Office.Interop.Word" Version="15.0.4797.1004" />
+    <PackageReference Include="MSOfficeCore.Interop" Version="15.0.2" />
   </ItemGroup>
 </Project>
