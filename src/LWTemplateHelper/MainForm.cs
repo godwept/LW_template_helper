@@ -1,5 +1,7 @@
 namespace LWTemplateHelper;
 
+internal sealed record ValidationResult(string Summary, bool HasBlockingErrors, bool HasWarnings);
+
 internal sealed class MainForm : Form
 {
     private readonly ComboBox _templateTypeCombo = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
@@ -34,6 +36,8 @@ internal sealed class MainForm : Form
     private readonly Label _status = new() { AutoSize = true, Text = "Create or select a Template Type and subtype." };
     private readonly Button _openButton = new() { Text = "Open Working Copies", AutoSize = true, Enabled = false };
     private readonly Button _closeButton = new() { Text = "Close Word Session", AutoSize = true, Enabled = false };
+    private readonly Button _validateButton = new() { Text = "Validate", AutoSize = true, Enabled = false };
+    private readonly Button _finalizeButton = new() { Text = "Save / Finalize", AutoSize = true, Enabled = false };
     private readonly Button _sideBySideButton = new() { Text = "Side by Side", AutoSize = true, Enabled = false };
     private readonly Button _englishFocusButton = new() { Text = "English Focus", AutoSize = true, Enabled = false };
     private readonly Button _frenchFocusButton = new() { Text = "French Focus", AutoSize = true, Enabled = false };
@@ -88,7 +92,7 @@ internal sealed class MainForm : Form
         root.Controls.Add(BuildSourceGroup());
 
         var sessionButtons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
-        sessionButtons.Controls.AddRange([_openButton, _closeButton]);
+        sessionButtons.Controls.AddRange([_openButton, _closeButton, _validateButton, _finalizeButton]);
         root.Controls.Add(sessionButtons);
 
         var layoutButtons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
@@ -136,6 +140,8 @@ internal sealed class MainForm : Form
         _testDeleteContentButton.Click += (_, _) => TestDeleteContent();
         _openButton.Click += (_, _) => OpenWorkingCopies();
         _closeButton.Click += (_, _) => CloseSession();
+        _validateButton.Click += (_, _) => ShowValidationSummary();
+        _finalizeButton.Click += (_, _) => FinalizeTemplates();
         _sideBySideButton.Click += (_, _) => RunWordAction(_wordSession.ArrangeSideBySide);
         _englishFocusButton.Click += (_, _) => RunWordAction(_wordSession.FocusEnglish);
         _frenchFocusButton.Click += (_, _) => RunWordAction(_wordSession.FocusFrench);
@@ -803,12 +809,275 @@ internal sealed class MainForm : Form
         _testModeLabel.ForeColor = test ? Color.DarkRed : SystemColors.GrayText;
 
         _refreshStatusButton.Enabled = open && !test;
+        _validateButton.Enabled = open && !test;
+        _finalizeButton.Enabled = open && !test;
         _addInfoButton.Enabled = open && !test;
         _sideBySideButton.Enabled = open && !test;
         _englishFocusButton.Enabled = open && !test;
         _frenchFocusButton.Enabled = open && !test;
 
         UpdateBookmarkActionButtons();
+    }
+
+    private ValidationResult BuildValidationSummary()
+    {
+        var type = SelectedType;
+        var subtype = SelectedSubtype;
+
+        if (type is null || subtype is null || !_wordSession.IsOpen)
+        {
+            return new ValidationResult(
+                "Open a configured template subtype before validating.",
+                HasBlockingErrors: true,
+                HasWarnings: false);
+        }
+
+        var blocking = new List<string>();
+        var warnings = new List<string>();
+
+        if (!ConfigurationValidation.TryValidateTemplatePath(
+                subtype.EnglishTemplatePath,
+                "English",
+                out string englishPathError))
+        {
+            blocking.Add(englishPathError);
+        }
+
+        if (!ConfigurationValidation.TryValidateTemplatePath(
+                subtype.FrenchTemplatePath,
+                "French",
+                out string frenchPathError))
+        {
+            blocking.Add(frenchPathError);
+        }
+
+        if (blocking.Count == 0 &&
+            string.Equals(
+                Path.GetFullPath(subtype.EnglishTemplatePath),
+                Path.GetFullPath(subtype.FrenchTemplatePath),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            blocking.Add("English and French source templates point to the same file.");
+        }
+
+        if (_wordSession.IsTestMode)
+            blocking.Add("Close Test Mode before validating/finalizing.");
+
+        HashSet<string> english;
+        HashSet<string> french;
+
+        try
+        {
+            (english, french) = _wordSession.GetBookmarkNames();
+        }
+        catch (Exception ex)
+        {
+            blocking.Add($"Could not read working-copy bookmarks: {ex.Message}");
+            english = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            french = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var configured = new HashSet<string>(type.Bookmarks, StringComparer.OrdinalIgnoreCase);
+        var configuredMismatches = new List<string>();
+        int configuredBoth = 0;
+        int configuredUnused = 0;
+
+        foreach (string bookmark in type.Bookmarks)
+        {
+            bool en = english.Contains(bookmark);
+            bool fr = french.Contains(bookmark);
+
+            if (en && fr)
+                configuredBoth++;
+            else if (!en && !fr)
+                configuredUnused++;
+            else
+                configuredMismatches.Add($"{bookmark} ({(en ? "EN only" : "FR only")})");
+        }
+
+        if (configuredMismatches.Count > 0)
+        {
+            warnings.Add(
+                $"Configured bookmark mismatches ({configuredMismatches.Count}): {FormatValidationNames(configuredMismatches)}");
+        }
+
+        var infoNames = english
+            .Union(french, StringComparer.OrdinalIgnoreCase)
+            .Where(name => WordSession.TryGetInfoNumber(name, out _))
+            .OrderBy(name =>
+            {
+                WordSession.TryGetInfoNumber(name, out int number);
+                return number;
+            })
+            .ThenBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var infoMismatches = infoNames
+            .Where(name => english.Contains(name) != french.Contains(name))
+            .Select(name => $"{name} ({(english.Contains(name) ? "EN only" : "FR only")})")
+            .ToList();
+
+        if (infoMismatches.Count > 0)
+        {
+            warnings.Add(
+                $"INFO mismatches ({infoMismatches.Count}): {FormatValidationNames(infoMismatches)}");
+        }
+
+        var infoSet = new HashSet<string>(infoNames, StringComparer.OrdinalIgnoreCase);
+        var otherNames = english
+            .Union(french, StringComparer.OrdinalIgnoreCase)
+            .Where(name => !configured.Contains(name) && !infoSet.Contains(name))
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (otherNames.Count > 0)
+        {
+            warnings.Add(
+                $"Other Bookmarks ({otherNames.Count}): {FormatValidationNames(otherNames)}");
+        }
+
+        var summary = new List<string>
+        {
+            $"{type.Name} / {subtype.Name}",
+            string.Empty,
+            $"Configured bookmarks: {configuredBoth} in both, {configuredUnused} unused, {configuredMismatches.Count} mismatch",
+            $"INFO bookmarks: {infoNames.Count}, {infoMismatches.Count} mismatch",
+            $"Other Bookmarks: {otherNames.Count}",
+            string.Empty,
+            $"English source: {subtype.EnglishTemplatePath}",
+            $"French source: {subtype.FrenchTemplatePath}"
+        };
+
+        if (blocking.Count > 0)
+        {
+            summary.Add(string.Empty);
+            summary.Add("CANNOT FINALIZE:");
+            summary.AddRange(blocking.Select(x => "• " + x));
+        }
+
+        if (warnings.Count > 0)
+        {
+            summary.Add(string.Empty);
+            summary.Add("WARNINGS:");
+            summary.AddRange(warnings.Select(x => "• " + x));
+        }
+
+        if (blocking.Count == 0 && warnings.Count == 0)
+        {
+            summary.Add(string.Empty);
+            summary.Add("No validation warnings found.");
+        }
+
+        return new ValidationResult(
+            string.Join(Environment.NewLine, summary),
+            blocking.Count > 0,
+            warnings.Count > 0);
+    }
+
+    private static string FormatValidationNames(IReadOnlyList<string> names)
+    {
+        const int maxShown = 12;
+
+        if (names.Count <= maxShown)
+            return string.Join(", ", names);
+
+        return string.Join(", ", names.Take(maxShown)) + $" … +{names.Count - maxShown} more";
+    }
+
+    private void ShowValidationSummary()
+    {
+        var validation = BuildValidationSummary();
+
+        MessageBox.Show(
+            this,
+            validation.Summary,
+            "Template validation",
+            MessageBoxButtons.OK,
+            validation.HasBlockingErrors
+                ? MessageBoxIcon.Error
+                : validation.HasWarnings
+                    ? MessageBoxIcon.Warning
+                    : MessageBoxIcon.Information);
+    }
+
+    private void FinalizeTemplates()
+    {
+        var subtype = SelectedSubtype;
+        if (subtype is null || !_wordSession.IsOpen)
+            return;
+
+        var validation = BuildValidationSummary();
+
+        if (validation.HasBlockingErrors)
+        {
+            MessageBox.Show(
+                this,
+                validation.Summary,
+                "Cannot finalize",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return;
+        }
+
+        string prompt =
+            validation.Summary +
+            Environment.NewLine + Environment.NewLine +
+            "Finalize will:" + Environment.NewLine +
+            "• save both working documents through Word;" + Environment.NewLine +
+            "• create timestamped backups beside both source templates;" + Environment.NewLine +
+            "• overwrite the configured English and French source templates." + Environment.NewLine + Environment.NewLine +
+            "Continue?";
+
+        var answer = MessageBox.Show(
+            this,
+            prompt,
+            "Save / Finalize templates",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+
+        if (answer != DialogResult.Yes)
+            return;
+
+        try
+        {
+            UseWaitCursor = true;
+            _validateButton.Enabled = false;
+            _finalizeButton.Enabled = false;
+            _status.Text = "Saving working copies, creating backups, and finalizing source templates...";
+
+            var result = _wordSession.FinalizeToSources(
+                subtype.EnglishTemplatePath,
+                subtype.FrenchTemplatePath);
+
+            _status.Text = "Finalize complete. Source templates were updated and backups were created.";
+
+            MessageBox.Show(
+                this,
+                "Templates finalized successfully." +
+                Environment.NewLine + Environment.NewLine +
+                $"English backup: {result.EnglishBackupPath}" + Environment.NewLine +
+                $"French backup: {result.FrenchBackupPath}",
+                "Finalize complete",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            _status.Text = "Finalize failed. Review the error before continuing.";
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Finalize error",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            SetSessionControls(_wordSession.IsOpen);
+            UpdateTestModeUi();
+        }
     }
 
     private void CreateTemplateType()
@@ -1162,6 +1431,8 @@ internal sealed class MainForm : Form
 
         _openButton.Enabled = !open && SelectedSubtype is not null;
         _closeButton.Enabled = open;
+        _validateButton.Enabled = open && !_wordSession.IsTestMode;
+        _finalizeButton.Enabled = open && !_wordSession.IsTestMode;
 
         _startTestButton.Enabled = open && !_wordSession.IsTestMode;
         _resetTestButton.Enabled = _wordSession.IsTestMode;
