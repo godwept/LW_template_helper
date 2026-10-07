@@ -61,6 +61,8 @@ internal sealed class BookmarkNameDialog : Form
         root.Controls.Add(buttons);
 
         Controls.Add(root);
+        AppTheme.Apply(this);
+        AppTheme.StylePrimaryButton(rename);
         AcceptButton = rename;
         CancelButton = cancel;
     }
