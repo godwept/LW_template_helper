@@ -2,6 +2,39 @@ using System.Runtime.InteropServices;
 
 namespace LWTemplateHelper;
 
+internal sealed class ThemedButton : Button
+{
+    protected override void OnPaint(PaintEventArgs pevent)
+    {
+        if (Enabled)
+        {
+            base.OnPaint(pevent);
+            return;
+        }
+
+        pevent.Graphics.Clear(AppTheme.DisabledButtonBack);
+
+        using var border = new Pen(AppTheme.DisabledButtonBorder);
+        pevent.Graphics.DrawRectangle(
+            border,
+            0,
+            0,
+            Math.Max(0, Width - 1),
+            Math.Max(0, Height - 1));
+
+        TextRenderer.DrawText(
+            pevent.Graphics,
+            Text,
+            Font,
+            ClientRectangle,
+            AppTheme.DisabledText,
+            TextFormatFlags.HorizontalCenter |
+            TextFormatFlags.VerticalCenter |
+            TextFormatFlags.SingleLine |
+            TextFormatFlags.EndEllipsis);
+    }
+}
+
 internal static class AppTheme
 {
     public static readonly Color WindowBack = Color.FromArgb(17, 24, 39);
@@ -16,6 +49,9 @@ internal static class AppTheme
     public static readonly Color Danger = Color.FromArgb(153, 55, 66);
     public static readonly Color DangerAccent = Color.FromArgb(239, 99, 111);
     public static readonly Color Border = Color.FromArgb(55, 65, 81);
+    public static readonly Color DisabledButtonBack = Color.FromArgb(32, 42, 55);
+    public static readonly Color DisabledButtonBorder = Color.FromArgb(70, 91, 108);
+    public static readonly Color DisabledText = Color.FromArgb(158, 178, 194);
 
     public static readonly Color SuccessBack = Color.FromArgb(31, 78, 60);
     public static readonly Color ErrorBack = Color.FromArgb(96, 44, 51);
