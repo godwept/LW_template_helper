@@ -10,7 +10,7 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 2 implemented; awaiting user manual testing.
+**Stage:** Phase 2 complete and user-tested; ready for Phase 3.
 
 Phase 1 is complete and user-tested. The application now has the basic Word lifecycle plus JSON-backed Template Type / Template Subtype configuration.
 
@@ -125,7 +125,15 @@ Confirmed working by the user:
 
 ### Phase 2
 
-Not yet manually tested.
+Confirmed working by the user:
+
+- Template Types can be created and edited;
+- configured bookmark-name lists can be created/edited;
+- subtypes can be created and edited;
+- EN/FR template paths can be assigned per subtype;
+- subtype switching updates the displayed paths;
+- saved configuration persists after restart;
+- the selected subtype still opens correctly through the Phase 1 Word workflow.
 
 ---
 
@@ -181,9 +189,7 @@ If a configured source file is moved or deleted after the subtype is saved, open
 
 ## Exact Next Step
 
-**User manually tests Phase 2.**
-
-If Phase 2 passes, update this file with the result and implement **Phase 3 — Bookmark discovery/status**:
+**Implement Phase 3 — Bookmark discovery/status**:
 
 - enumerate bookmarks from both working Word documents;
 - compare them with the selected Template Type bookmark list;
