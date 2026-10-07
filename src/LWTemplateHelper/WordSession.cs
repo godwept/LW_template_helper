@@ -65,6 +65,15 @@ internal sealed class WordSession : IDisposable
         }
     }
 
+    public (HashSet<string> English, HashSet<string> French) GetBookmarkNames()
+    {
+        EnsureOpen();
+
+        return (
+            ReadBookmarkNames(_englishDocument!),
+            ReadBookmarkNames(_frenchDocument!));
+    }
+
     public void ArrangeSideBySide()
     {
         EnsureOpen();
@@ -97,6 +106,39 @@ internal sealed class WordSession : IDisposable
     public void FocusEnglish() => Focus(_englishDocument);
 
     public void FocusFrench() => Focus(_frenchDocument);
+
+    private static HashSet<string> ReadBookmarkNames(Word.Document document)
+    {
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        Word.Bookmarks? bookmarks = null;
+
+        try
+        {
+            bookmarks = document.Bookmarks;
+
+            for (int i = 1; i <= bookmarks.Count; i++)
+            {
+                object index = i;
+                Word.Bookmark? bookmark = null;
+
+                try
+                {
+                    bookmark = bookmarks.get_Item(ref index);
+                    names.Add(bookmark.Name);
+                }
+                finally
+                {
+                    ReleaseCom(bookmark);
+                }
+            }
+
+            return names;
+        }
+        finally
+        {
+            ReleaseCom(bookmarks);
+        }
+    }
 
     private static void PositionNative(Word.Window window, int left, int top, int width, int height)
     {
@@ -143,7 +185,7 @@ internal sealed class WordSession : IDisposable
             throw new FileNotFoundException("Template file was not found.", path);
 
         if (!string.Equals(Path.GetExtension(path), ".docx", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException("Only .docx templates are supported in Phase 1.", nameof(path));
+            throw new ArgumentException("Only .docx templates are supported.", nameof(path));
     }
 
     public void Close()

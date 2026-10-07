@@ -8,7 +8,17 @@ internal sealed class MainForm : Form
     private readonly Button _editTypeButton = new() { Text = "Edit Type", AutoSize = true };
     private readonly Button _newSubtypeButton = new() { Text = "New Subtype", AutoSize = true };
     private readonly Button _editSubtypeButton = new() { Text = "Edit Subtype", AutoSize = true };
-    private readonly ListBox _bookmarkList = new() { Dock = DockStyle.Fill };
+
+    private readonly DataGridView _bookmarkGrid = CreateBookmarkGrid();
+    private readonly DataGridView _otherBookmarkGrid = CreateBookmarkGrid();
+    private readonly Label _bookmarkSummary = new()
+    {
+        AutoSize = true,
+        Text = "Open working copies to compare bookmark status.",
+        Anchor = AnchorStyles.Left
+    };
+    private readonly Button _refreshStatusButton = new() { Text = "Refresh Status", AutoSize = true, Enabled = false };
+
     private readonly TextBox _englishPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
     private readonly TextBox _frenchPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
     private readonly Label _status = new() { AutoSize = true, Text = "Create or select a Template Type and subtype." };
@@ -26,8 +36,8 @@ internal sealed class MainForm : Form
     {
         Text = "Letter Wizard Template Bookmark Manager";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(850, 620);
-        Size = new Size(980, 700);
+        MinimumSize = new Size(850, 660);
+        Size = new Size(980, 760);
 
         var root = new TableLayoutPanel
         {
@@ -56,7 +66,13 @@ internal sealed class MainForm : Form
         layoutButtons.Controls.AddRange([_sideBySideButton, _englishFocusButton, _frenchFocusButton]);
         root.Controls.Add(layoutButtons);
 
-        var statusGroup = new GroupBox { Text = "Session status", Dock = DockStyle.Fill, Padding = new Padding(10), AutoSize = true };
+        var statusGroup = new GroupBox
+        {
+            Text = "Session status",
+            Dock = DockStyle.Fill,
+            Padding = new Padding(10),
+            AutoSize = true
+        };
         statusGroup.Controls.Add(_status);
         root.Controls.Add(statusGroup);
 
@@ -71,12 +87,58 @@ internal sealed class MainForm : Form
 
         _openButton.Click += (_, _) => OpenWorkingCopies();
         _closeButton.Click += (_, _) => CloseSession();
+        _refreshStatusButton.Click += (_, _) => RefreshBookmarkStatus();
         _sideBySideButton.Click += (_, _) => RunWordAction(_wordSession.ArrangeSideBySide);
         _englishFocusButton.Click += (_, _) => RunWordAction(_wordSession.FocusEnglish);
         _frenchFocusButton.Click += (_, _) => RunWordAction(_wordSession.FocusFrench);
         FormClosing += (_, _) => _wordSession.Dispose();
 
         LoadConfigurations();
+    }
+
+    private static DataGridView CreateBookmarkGrid()
+    {
+        var grid = new DataGridView
+        {
+            Dock = DockStyle.Fill,
+            ReadOnly = true,
+            AllowUserToAddRows = false,
+            AllowUserToDeleteRows = false,
+            AllowUserToResizeRows = false,
+            RowHeadersVisible = false,
+            MultiSelect = false,
+            SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+            AutoGenerateColumns = false,
+            BackgroundColor = SystemColors.Window
+        };
+
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "Bookmark",
+            HeaderText = "Bookmark",
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+            FillWeight = 60
+        });
+
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "English",
+            HeaderText = "EN",
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+            FillWeight = 20,
+            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+        });
+
+        grid.Columns.Add(new DataGridViewTextBoxColumn
+        {
+            Name = "French",
+            HeaderText = "FR",
+            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+            FillWeight = 20,
+            DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
+        });
+
+        return grid;
     }
 
     private Control BuildConfigurationGroup()
@@ -120,12 +182,50 @@ internal sealed class MainForm : Form
     {
         var group = new GroupBox
         {
-            Text = "Configured bookmarks",
+            Text = "Bookmark status",
             Dock = DockStyle.Fill,
             Padding = new Padding(10)
         };
 
-        group.Controls.Add(_bookmarkList);
+        var table = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 5
+        };
+
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        table.RowStyles.Add(new RowStyle(SizeType.Percent, 65));
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        table.RowStyles.Add(new RowStyle(SizeType.Percent, 35));
+
+        var toolbar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = false
+        };
+        toolbar.Controls.Add(_refreshStatusButton);
+        toolbar.Controls.Add(_bookmarkSummary);
+
+        table.Controls.Add(toolbar);
+        table.Controls.Add(new Label
+        {
+            Text = "Configured bookmarks",
+            AutoSize = true,
+            Margin = new Padding(3, 8, 3, 3)
+        });
+        table.Controls.Add(_bookmarkGrid);
+        table.Controls.Add(new Label
+        {
+            Text = "Other Bookmarks",
+            AutoSize = true,
+            Margin = new Padding(3, 8, 3, 3)
+        });
+        table.Controls.Add(_otherBookmarkGrid);
+
+        group.Controls.Add(table);
         return group;
     }
 
@@ -216,8 +316,9 @@ internal sealed class MainForm : Form
     {
         var type = SelectedType;
 
-        _bookmarkList.Items.Clear();
         _subtypeCombo.Items.Clear();
+        PopulateConfiguredBookmarkRows(type);
+        _otherBookmarkGrid.Rows.Clear();
 
         if (type is null)
         {
@@ -231,9 +332,6 @@ internal sealed class MainForm : Form
         _editTypeButton.Enabled = !_wordSession.IsOpen;
         _newSubtypeButton.Enabled = !_wordSession.IsOpen;
 
-        foreach (string bookmark in type.Bookmarks)
-            _bookmarkList.Items.Add(bookmark);
-
         foreach (var subtype in type.Subtypes.OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase))
             _subtypeCombo.Items.Add(subtype);
 
@@ -241,6 +339,27 @@ internal sealed class MainForm : Form
             _subtypeCombo.SelectedIndex = 0;
         else
             SubtypeChanged();
+    }
+
+    private void PopulateConfiguredBookmarkRows(TemplateTypeConfig? type)
+    {
+        _bookmarkGrid.Rows.Clear();
+
+        if (type is null)
+        {
+            _bookmarkSummary.Text = "Create or select a Template Type.";
+            return;
+        }
+
+        foreach (string bookmark in type.Bookmarks)
+        {
+            int rowIndex = _bookmarkGrid.Rows.Add(bookmark, "—", "—");
+            _bookmarkGrid.Rows[rowIndex].DefaultCellStyle.BackColor = SystemColors.Window;
+        }
+
+        _bookmarkSummary.Text = _wordSession.IsOpen
+            ? "Click Refresh Status to compare the open working copies."
+            : "Open working copies to compare bookmark status.";
     }
 
     private void SubtypeChanged()
@@ -408,6 +527,7 @@ internal sealed class MainForm : Form
 
             _wordSession.Open(subtype.EnglishTemplatePath, subtype.FrenchTemplatePath);
             SetSessionControls(true);
+            RefreshBookmarkStatus();
 
             _status.Text =
                 $"Word session open for {SelectedType?.Name} / {subtype.Name}. Working files: {_wordSession.SessionDirectory}";
@@ -426,12 +546,98 @@ internal sealed class MainForm : Form
         }
     }
 
+    private void RefreshBookmarkStatus()
+    {
+        var type = SelectedType;
+        if (type is null || !_wordSession.IsOpen)
+            return;
+
+        try
+        {
+            var (english, french) = _wordSession.GetBookmarkNames();
+            var configured = new HashSet<string>(type.Bookmarks, StringComparer.OrdinalIgnoreCase);
+
+            int both = 0;
+            int mismatch = 0;
+            int neither = 0;
+
+            _bookmarkGrid.Rows.Clear();
+
+            foreach (string bookmark in type.Bookmarks)
+            {
+                bool enExists = english.Contains(bookmark);
+                bool frExists = french.Contains(bookmark);
+
+                if (enExists && frExists)
+                    both++;
+                else if (enExists != frExists)
+                    mismatch++;
+                else
+                    neither++;
+
+                int rowIndex = _bookmarkGrid.Rows.Add(
+                    bookmark,
+                    enExists ? "Exists" : "Missing",
+                    frExists ? "Exists" : "Missing");
+
+                ApplyConfiguredStatusStyle(_bookmarkGrid.Rows[rowIndex], enExists, frExists);
+            }
+
+            var otherNames = english
+                .Union(french, StringComparer.OrdinalIgnoreCase)
+                .Where(name => !configured.Contains(name))
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            _otherBookmarkGrid.Rows.Clear();
+
+            foreach (string bookmark in otherNames)
+            {
+                bool enExists = english.Contains(bookmark);
+                bool frExists = french.Contains(bookmark);
+
+                int rowIndex = _otherBookmarkGrid.Rows.Add(
+                    bookmark,
+                    enExists ? "Exists" : "—",
+                    frExists ? "Exists" : "—");
+
+                ApplyOtherBookmarkStyle(_otherBookmarkGrid.Rows[rowIndex], enExists, frExists);
+            }
+
+            _bookmarkSummary.Text =
+                $"Configured: {both} both, {mismatch} mismatch, {neither} unused | Other: {otherNames.Count}";
+
+            _status.Text = $"Bookmark status refreshed. EN: {english.Count}, FR: {french.Count}.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Bookmark status error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    private static void ApplyConfiguredStatusStyle(DataGridViewRow row, bool english, bool french)
+    {
+        row.DefaultCellStyle.BackColor = english != french
+            ? Color.MistyRose
+            : english
+                ? Color.Honeydew
+                : Color.WhiteSmoke;
+    }
+
+    private static void ApplyOtherBookmarkStyle(DataGridViewRow row, bool english, bool french)
+    {
+        row.DefaultCellStyle.BackColor = english != french
+            ? Color.MistyRose
+            : Color.LemonChiffon;
+    }
+
     private void CloseSession()
     {
         try
         {
             _wordSession.Close();
-            _status.Text = $"Word session closed. Source templates were not modified. Ready: {SelectedType?.Name} / {SelectedSubtype?.Name}";
+            _status.Text =
+                $"Word session closed. Source templates were not modified. Ready: {SelectedType?.Name} / {SelectedSubtype?.Name}";
         }
         catch (Exception ex)
         {
@@ -440,6 +646,8 @@ internal sealed class MainForm : Form
         finally
         {
             SetSessionControls(false);
+            PopulateConfiguredBookmarkRows(SelectedType);
+            _otherBookmarkGrid.Rows.Clear();
         }
     }
 
@@ -466,6 +674,7 @@ internal sealed class MainForm : Form
 
         _openButton.Enabled = !open && SelectedSubtype is not null;
         _closeButton.Enabled = open;
+        _refreshStatusButton.Enabled = open;
         _sideBySideButton.Enabled = open;
         _englishFocusButton.Enabled = open;
         _frenchFocusButton.Enabled = open;
