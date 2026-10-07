@@ -211,7 +211,7 @@ internal sealed class MainForm : Form
             Dock = DockStyle.Fill,
             AutoSize = true,
             ColumnCount = 4,
-            RowCount = 4
+            RowCount = 3
         };
 
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105));
@@ -229,27 +229,41 @@ internal sealed class MainForm : Form
         table.Controls.Add(_newSubtypeButton, 2, 1);
         table.Controls.Add(_editSubtypeButton, 3, 1);
 
+        var actionRow = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = new Padding(0, 10, 0, 0)
+        };
+        actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+
         var sessionToolbar = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
             WrapContents = true,
-            Margin = new Padding(0, 10, 0, 2)
+            Margin = new Padding(0)
         };
         sessionToolbar.Controls.AddRange([_openButton, _closeButton, _validateButton, _finalizeButton]);
-        table.Controls.Add(sessionToolbar, 0, 2);
-        table.SetColumnSpan(sessionToolbar, 4);
 
         var layoutToolbar = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill,
             AutoSize = true,
-            WrapContents = true,
-            Margin = new Padding(0, 2, 0, 0)
+            WrapContents = false,
+            FlowDirection = FlowDirection.LeftToRight,
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
+            Margin = new Padding(12, 0, 0, 0)
         };
         layoutToolbar.Controls.AddRange([_sideBySideButton, _englishFocusButton, _frenchFocusButton]);
-        table.Controls.Add(layoutToolbar, 0, 3);
-        table.SetColumnSpan(layoutToolbar, 4);
+
+        actionRow.Controls.Add(sessionToolbar, 0, 0);
+        actionRow.Controls.Add(layoutToolbar, 1, 0);
+
+        table.Controls.Add(actionRow, 0, 2);
+        table.SetColumnSpan(actionRow, 4);
 
         group.Controls.Add(table);
         return group;
