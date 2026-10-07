@@ -85,7 +85,6 @@ internal sealed class WordSession : IDisposable
         EnsureOpen();
         LocateBookmark(_englishDocument, bookmarkName, "English");
         LocateBookmark(_frenchDocument, bookmarkName, "French");
-        ArrangeSideBySide();
     }
 
     public string AddNextInfoBookmark()
