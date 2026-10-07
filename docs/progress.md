@@ -10,7 +10,7 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 6 implemented; awaiting user manual testing.
+**Stage:** Phase 6 user-tested and complete; Locate Both window-position refinement awaiting quick retest.
 
 Phases 1-5 are complete and user-tested. Phase 6 adds the dedicated sequential `INFO_n` workflow using the same live Word-selection model as normal bookmarks.
 
@@ -157,6 +157,7 @@ Phase 6 commits:
 - sequential INFO creation: `4aad24631568c7f087bf81174e194939f371ff79`
 - INFO UI/status: `f2bf667eee4bee5d5f5cee5bc2b92736d85a8b1d`
 - INFO status hardening: `2c671a291a9e315c8c62e779568bffc16ccdcd72`
+- Locate Both no longer repositions Word windows: `6c3b02414dbeada0de892ddfffeaf292a8f6bfa4`
 
 ---
 
@@ -185,7 +186,14 @@ Confirmed working by the user after the Capture step was removed:
 
 ### Phase 6
 
-Not yet manually tested.
+Confirmed working by the user:
+
+- dedicated INFO section;
+- INFO numbering uses highest existing number + 1;
+- Add INFO works from live EN/FR Word selections;
+- INFO mismatch/status display works;
+- Locate/Replace/Delete behavior works on INFO rows;
+- INFO bookmarks stay out of Other Bookmarks.
 
 ---
 
@@ -249,9 +257,9 @@ Closing the Word session uses Do Not Save. Source replacement/backups remain Pha
 
 ## Exact Next Step
 
-**User manually tests Phase 6.**
+**User quickly retests Locate Both and confirms the Word windows remain where they were placed.**
 
-If Phase 6 passes, implement **Phase 7 — Test Mode**:
+After that, implement **Phase 7 — Test Mode**:
 
 - save the current working document state through Word;
 - create disposable `Test_E.docx` / `Test_F.docx`;
