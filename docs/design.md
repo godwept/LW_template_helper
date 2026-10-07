@@ -1,6 +1,6 @@
 # Letter Wizard Template Bookmark Manager — Design
 
-Status: **Accepted architecture; implementation in progress (Phases 1-7 implemented)**
+Status: **Accepted architecture; implementation in progress (Phases 1-8 implemented)**
 
 ## 1. Purpose
 
@@ -151,15 +151,25 @@ Session
 
 ### Final save
 
-A final save/finalize action should:
+The explicit **Save / Finalize** action:
 
-1. ask Word to save working documents;
-2. validate that the intended source paths still exist/are writable;
-3. create backups of the current source templates;
-4. copy/replace the sources using the working files;
-5. report success/failure clearly.
+1. validates the current working-copy bookmark state and source paths;
+2. shows warnings without automatically changing document content;
+3. requires explicit overwrite confirmation;
+4. asks Word to save the working documents;
+5. rejects read-only source files;
+6. creates backups beside the current source templates;
+7. copies the working files over the configured source files;
+8. attempts to restore both originals from backup if either replacement fails;
+9. reports success/failure and the backup paths clearly.
 
-Backups should be simple and easy to locate.
+Backup naming convention:
+
+`<source-name>.backup-YYYYMMDD-HHMMSS.docx`
+
+If that name already exists, append a numeric suffix.
+
+Finalize is the **only** normal workflow that overwrites source templates.
 
 ---
 
@@ -495,6 +505,6 @@ These should be resolved through small manual prototypes during implementation:
 2. Exact window positioning behavior across multiple monitors/DPI settings.
 3. How Word handles selection/range references after intervening edits and when a stored range should be invalidated.
 4. ~~Exact Letter Wizard semantics for Set Value/Delete so Test Mode mirrors the VBA behavior.~~ Resolved in Phase 7: Set Value assigns bookmark `Range.Text` without recreating the bookmark; Delete removes the bookmarked range/content with `Range.Delete`.
-5. Backup filename/location convention for final saves.
+5. ~~Backup filename/location convention for final saves.~~ Resolved in Phase 8: backups are created beside each source template as `<source-name>.backup-YYYYMMDD-HHMMSS.docx`, with a numeric suffix on collision.
 
 None of these changes the overall architecture.

@@ -10,9 +10,9 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 7 complete and user-tested; ready for Phase 8.
+**Stage:** Phase 8 implemented; awaiting user manual testing.
 
-Phases 1-7 are complete and user-tested. The next step is Phase 8: validation and safe finalization back to the configured source templates.
+Phases 1-7 are complete and user-tested. Phase 8 now provides validation plus explicit backup-and-replace finalization back to the configured source templates.
 
 ---
 
@@ -225,6 +225,59 @@ Phase 7 commits:
 
 ---
 
+### Phase 8 — Validation + final save
+
+Implemented on 2026-10-07.
+
+Validation:
+
+- **Validate** reads the current working-copy bookmark state directly from Word;
+- reports configured bookmarks present in both documents;
+- reports configured bookmarks unused in both documents;
+- warns on configured EN/FR mismatches;
+- warns on INFO EN/FR mismatches;
+- lists/warns about Other Bookmarks;
+- validates that both configured source paths still exist;
+- blocks finalization if the English/French source paths resolve to the same file;
+- blocks validation/finalization while Test Mode is active;
+- warnings inform the user but do not automatically modify documents or prevent finalization.
+
+Finalize:
+
+- explicit **Save / Finalize** action;
+- shows the current validation summary before overwrite confirmation;
+- default confirmation action is **No**;
+- saves both working documents through Word before copying;
+- rejects read-only source templates;
+- creates timestamped backups beside each source template;
+- backup naming convention:
+  - `<filename>.backup-YYYYMMDD-HHMMSS.docx`
+  - numeric suffix added if a backup name already exists;
+- overwrites the configured English/French source templates from `Working_E.docx` / `Working_F.docx`;
+- if either source replacement throws, attempts to restore **both** originals from the backups;
+- leaves backups in place after successful finalization;
+- reports the exact backup paths after success;
+- working documents remain open after finalize, allowing review or another explicit finalize if further edits are made.
+
+Important files:
+
+- `src/LWTemplateHelper/WordSession.cs`
+  - `SaveWorkingCopies()`
+  - `FinalizeToSources()`
+  - backup naming and rollback
+- `src/LWTemplateHelper/MainForm.cs`
+  - validation summary
+  - Validate action
+  - Save / Finalize confirmation and result UI
+
+Phase 8 commits:
+
+- safe Word save / backup / source replacement: `f6360299f5a37dc2b9a1ff5b6555708d475fc337`
+- validation + finalize UI: `a51157b7a2f2dbf5fdf8336886b51900eae0c0f2`
+- rollback hardening: `7ad5a180b118a9167b4344b8f81ef0cea90cb86c`
+
+---
+
 ---
 
 ## User-tested functionality
@@ -280,7 +333,7 @@ Confirmed working by the user:
 
 ## Known Issues / Risks
 
-### Phase 7 has not been compiled/run by the implementation agent
+### Phase 8 has not been compiled/run by the implementation agent
 
 Changes were made directly through GitHub. The user workstation remains the authoritative build/runtime test environment.
 
@@ -307,61 +360,50 @@ For Add Bookmark, Replace Range, and Add INFO:
 
 If either selection is collapsed, the operation is rejected.
 
-### Working-copy edits are disposable until Finalize
+### Finalize is the only source-overwrite path
 
-All editing phases currently modify only the session working copies.
+Normal editing and Test Mode continue to operate only on temporary session documents.
 
-Closing the Word session uses Do Not Save. Source replacement/backups remain Phase 8.
+Only the explicit **Save / Finalize** action copies working files back over the configured source templates.
+
+After a successful finalize, additional edits made to the still-open working copies are not written to the sources unless the user explicitly finalizes again.
 
 ---
 
-## Manual Test Checklist — Phase 7
+## Manual Test Checklist — Phase 8
+
+Use disposable/copy source templates for the first finalize test.
 
 1. Sync latest `main`, build, and run.
-2. Open a subtype and make at least one temporary bookmark edit in the working copies.
-3. Click **Start Test Mode**.
-4. Confirm:
-   - `Test_E.docx` opens directly over `Working_E.docx` and `Test_F.docx` directly over `Working_F.docx`, matching their current size/position and monitors;
-   - the manager clearly says **TEST MODE ACTIVE**;
-   - normal Add/Replace/Rename/Delete/Locate/layout controls are disabled;
-   - the original working documents remain open and unchanged.
-5. Select a normal bookmark row and leave the test value as `TEST VALUE`.
-6. Click **Set Value**.
-7. Inspect both test documents and confirm the bookmarked content was replaced by `TEST VALUE`.
-8. Confirm the working documents still contain their original bookmark/content.
-9. Confirm Set Value cannot simply be repeated on that same test bookmark without Reset, because the real Letter Wizard-style Range.Text replacement consumes the bookmark.
-10. Click **Reset Test**.
-11. Confirm the test documents return to the current working-copy state.
-12. Select a bookmark and click **Delete Content**.
-13. Confirm the bookmarked text/range disappears in the test documents, while the working documents remain untouched.
-14. Select an INFO row:
-   - confirm **Set Value** is disabled;
-   - confirm **Delete Content** works.
-15. If a bookmark exists on only one side, test it and confirm the manager reports EN-only or FR-only rather than modifying the other side.
-16. Click **Close Test** and confirm:
-   - the test documents close;
-   - normal bookmark-editing controls become available again;
-   - working documents remain intact.
-17. Start Test Mode again to confirm a fresh pair can be created after closing.
-18. Close the entire Word session and confirm source templates remain unchanged.
+2. Configure a subtype whose EN/FR source paths point to expendable copies of real templates.
+3. Open working copies and make a visible bookmark change.
+4. Click **Validate**.
+5. Confirm the summary correctly reports:
+   - configured both/unused/mismatch counts;
+   - INFO mismatch count;
+   - Other Bookmark count/names;
+   - the exact EN/FR source paths.
+6. Create or preserve an intentional EN/FR mismatch and confirm Validate warns but does not alter the documents.
+7. Click **Save / Finalize**.
+8. Confirm the validation summary is shown again and the overwrite prompt clearly states that source templates will be replaced.
+9. Choose **No** once and confirm no source files/backups are changed.
+10. Run **Save / Finalize** again and choose **Yes**.
+11. Confirm both source templates now contain the working-copy bookmark changes.
+12. Confirm timestamped backup files exist beside both original source templates.
+13. Open the backups and confirm they contain the pre-finalize originals.
+14. Confirm the working Word documents remain open after finalize.
+15. Make one more working-copy edit but do **not** finalize; confirm the already-finalized source template does not receive that later change.
+16. If practical, make one source template read-only and confirm Finalize refuses before overwriting it.
+17. Confirm Validate / Save / Finalize are disabled while Test Mode is active.
+18. Close the session and reopen the subtype; confirm the newly finalized source state is what gets copied into the new working session.
 
 ---
 
 ## Exact Next Step
 
-**Implement Phase 8 — Validation + final save**:
+**User manually tests Phase 8 using disposable source templates.**
 
-- validation summary;
-- configured EN/FR mismatch warnings;
-- INFO mismatch warnings;
-- Other Bookmark warnings;
-- explicit Save/Finalize;
-- save working documents through Word;
-- back up source templates;
-- replace sources from working copies;
-- clear success/failure reporting.
-
-Do not begin the Phase 9 usability pass until finalization is safe and user-tested.
+If Phase 8 passes, implement **Phase 9 — Usability pass**. Keep it small and driven by issues observed during real template work rather than adding speculative features.
 
 ---
 
