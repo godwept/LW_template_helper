@@ -67,21 +67,19 @@ internal sealed class MainForm : Form
     {
         Text = "Letter Wizard Template Bookmark Manager";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(900, 790);
-        Size = new Size(1040, 900);
+        MinimumSize = new Size(1050, 700);
+        Size = new Size(1320, 820);
 
         var root = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(12),
             ColumnCount = 1,
-            RowCount = 7
+            RowCount = 5
         };
 
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -90,14 +88,6 @@ internal sealed class MainForm : Form
         root.Controls.Add(BuildBookmarkGroup());
         root.Controls.Add(BuildTestModeGroup());
         root.Controls.Add(BuildSourceGroup());
-
-        var sessionButtons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
-        sessionButtons.Controls.AddRange([_openButton, _closeButton, _validateButton, _finalizeButton]);
-        root.Controls.Add(sessionButtons);
-
-        var layoutButtons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
-        layoutButtons.Controls.AddRange([_sideBySideButton, _englishFocusButton, _frenchFocusButton]);
-        root.Controls.Add(layoutButtons);
 
         var statusGroup = new GroupBox
         {
@@ -110,6 +100,17 @@ internal sealed class MainForm : Form
         root.Controls.Add(statusGroup);
 
         Controls.Add(root);
+
+        AppTheme.Apply(this);
+        AppTheme.StylePrimaryButton(_openButton);
+        AppTheme.StylePrimaryButton(_finalizeButton);
+        AppTheme.StylePrimaryButton(_addBookmarkButton);
+        AppTheme.StylePrimaryButton(_addInfoButton);
+        AppTheme.StylePrimaryButton(_startTestButton);
+        AppTheme.StyleDangerButton(_closeButton);
+        AppTheme.StyleDangerButton(_deleteBookmarkButton);
+        AppTheme.StyleDangerButton(_closeTestButton);
+        _testModeLabel.ForeColor = AppTheme.MutedText;
 
         _templateTypeCombo.SelectedIndexChanged += (_, _) => TemplateTypeChanged();
         _subtypeCombo.SelectedIndexChanged += (_, _) => SubtypeChanged();
@@ -202,7 +203,7 @@ internal sealed class MainForm : Form
             Text = "Template configuration",
             Dock = DockStyle.Top,
             AutoSize = true,
-            Padding = new Padding(10)
+            Padding = new Padding(12)
         };
 
         var table = new TableLayoutPanel
@@ -210,7 +211,7 @@ internal sealed class MainForm : Form
             Dock = DockStyle.Fill,
             AutoSize = true,
             ColumnCount = 4,
-            RowCount = 2
+            RowCount = 4
         };
 
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105));
@@ -228,6 +229,28 @@ internal sealed class MainForm : Form
         table.Controls.Add(_newSubtypeButton, 2, 1);
         table.Controls.Add(_editSubtypeButton, 3, 1);
 
+        var sessionToolbar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = true,
+            Margin = new Padding(0, 10, 0, 2)
+        };
+        sessionToolbar.Controls.AddRange([_openButton, _closeButton, _validateButton, _finalizeButton]);
+        table.Controls.Add(sessionToolbar, 0, 2);
+        table.SetColumnSpan(sessionToolbar, 4);
+
+        var layoutToolbar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = true,
+            Margin = new Padding(0, 2, 0, 0)
+        };
+        layoutToolbar.Controls.AddRange([_sideBySideButton, _englishFocusButton, _frenchFocusButton]);
+        table.Controls.Add(layoutToolbar, 0, 3);
+        table.SetColumnSpan(layoutToolbar, 4);
+
         group.Controls.Add(table);
         return group;
     }
@@ -236,88 +259,118 @@ internal sealed class MainForm : Form
     {
         var group = new GroupBox
         {
-            Text = "Bookmark status",
+            Text = "Bookmark workspace",
             Dock = DockStyle.Fill,
-            Padding = new Padding(10)
+            Padding = new Padding(12)
+        };
+
+        var outer = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 3
+        };
+
+        outer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        outer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        outer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+        var statusToolbar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = true
+        };
+        statusToolbar.Controls.Add(_refreshStatusButton);
+        statusToolbar.Controls.Add(_bookmarkSummary);
+
+        var actionToolbar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = true,
+            Margin = new Padding(0, 4, 0, 8)
+        };
+        actionToolbar.Controls.AddRange(
+            [_locateEnglishButton, _locateFrenchButton, _locateBothButton,
+             _addBookmarkButton, _addInfoButton, _replaceRangeButton, _renameBookmarkButton, _deleteBookmarkButton]);
+
+        var grids = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 1
+        };
+        grids.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
+        grids.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+        grids.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
+
+        grids.Controls.Add(BuildBookmarkColumn(
+            "Configured bookmarks",
+            "Click a row to select it",
+            _bookmarkGrid), 0, 0);
+
+        grids.Controls.Add(BuildBookmarkColumn(
+            "INFO bookmarks",
+            null,
+            _infoBookmarkGrid,
+            _infoSummary), 1, 0);
+
+        grids.Controls.Add(BuildBookmarkColumn(
+            "Other Bookmarks",
+            "Bookmarks not defined by this Template Type",
+            _otherBookmarkGrid), 2, 0);
+
+        outer.Controls.Add(statusToolbar);
+        outer.Controls.Add(actionToolbar);
+        outer.Controls.Add(grids);
+
+        group.Controls.Add(outer);
+        return group;
+    }
+
+    private static Control BuildBookmarkColumn(
+        string title,
+        string? subtitle,
+        DataGridView grid,
+        Label? summary = null)
+    {
+        var group = new GroupBox
+        {
+            Text = title,
+            Dock = DockStyle.Fill,
+            Padding = new Padding(8),
+            Margin = new Padding(4)
         };
 
         var table = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 9
+            RowCount = 2
         };
-
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        table.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        table.RowStyles.Add(new RowStyle(SizeType.Percent, 25));
-        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        table.RowStyles.Add(new RowStyle(SizeType.Percent, 25));
+        table.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-        var statusToolbar = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            WrapContents = false
-        };
-        statusToolbar.Controls.Add(_refreshStatusButton);
-        statusToolbar.Controls.Add(_bookmarkSummary);
+        Control header;
 
-        var locateToolbar = new FlowLayoutPanel
+        if (summary is not null)
         {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            WrapContents = false
-        };
-        locateToolbar.Controls.AddRange([_locateEnglishButton, _locateFrenchButton, _locateBothButton]);
+            header = summary;
+        }
+        else
+        {
+            header = new Label
+            {
+                Text = subtitle ?? string.Empty,
+                AutoSize = true,
+                ForeColor = AppTheme.MutedText,
+                Margin = new Padding(3, 2, 3, 6)
+            };
+        }
 
-        var editToolbar = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            WrapContents = false
-        };
-        editToolbar.Controls.AddRange(
-            [_addBookmarkButton, _addInfoButton, _replaceRangeButton, _renameBookmarkButton, _deleteBookmarkButton]);
-
-        var infoHeader = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            WrapContents = false
-        };
-        infoHeader.Controls.Add(new Label
-        {
-            Text = "INFO bookmarks",
-            AutoSize = true,
-            Margin = new Padding(3, 8, 8, 3)
-        });
-        infoHeader.Controls.Add(_infoSummary);
-
-        table.Controls.Add(statusToolbar);
-        table.Controls.Add(locateToolbar);
-        table.Controls.Add(editToolbar);
-        table.Controls.Add(new Label
-        {
-            Text = "Configured bookmarks — click a row to select it",
-            AutoSize = true,
-            Margin = new Padding(3, 8, 3, 3)
-        });
-        table.Controls.Add(_bookmarkGrid);
-        table.Controls.Add(infoHeader);
-        table.Controls.Add(_infoBookmarkGrid);
-        table.Controls.Add(new Label
-        {
-            Text = "Other Bookmarks",
-            AutoSize = true,
-            Margin = new Padding(3, 8, 3, 3)
-        });
-        table.Controls.Add(_otherBookmarkGrid);
-
+        table.Controls.Add(header);
+        table.Controls.Add(grid);
         group.Controls.Add(table);
         return group;
     }
@@ -500,7 +553,7 @@ internal sealed class MainForm : Form
         foreach (string bookmark in type.Bookmarks)
         {
             int rowIndex = _bookmarkGrid.Rows.Add(bookmark, "—", "—");
-            _bookmarkGrid.Rows[rowIndex].DefaultCellStyle.BackColor = SystemColors.Window;
+            _bookmarkGrid.Rows[rowIndex].DefaultCellStyle.BackColor = AppTheme.PanelBack;
         }
 
         _bookmarkGrid.ClearSelection();
@@ -806,7 +859,7 @@ internal sealed class MainForm : Form
             ? "TEST MODE ACTIVE — edits apply only to Test_E.docx / Test_F.docx"
             : "Test Mode inactive";
 
-        _testModeLabel.ForeColor = test ? Color.DarkRed : SystemColors.GrayText;
+        _testModeLabel.ForeColor = test ? AppTheme.DangerAccent : AppTheme.MutedText;
 
         _refreshStatusButton.Enabled = open && !test;
         _validateButton.Enabled = open && !test;
@@ -1364,24 +1417,27 @@ internal sealed class MainForm : Form
     private static void ApplyConfiguredStatusStyle(DataGridViewRow row, bool english, bool french)
     {
         row.DefaultCellStyle.BackColor = english != french
-            ? Color.MistyRose
+            ? AppTheme.ErrorBack
             : english
-                ? Color.Honeydew
-                : Color.WhiteSmoke;
+                ? AppTheme.SuccessBack
+                : AppTheme.NeutralBack;
+        row.DefaultCellStyle.ForeColor = AppTheme.Text;
     }
 
     private static void ApplyInfoStatusStyle(DataGridViewRow row, bool english, bool french)
     {
         row.DefaultCellStyle.BackColor = english != french
-            ? Color.MistyRose
-            : Color.Honeydew;
+            ? AppTheme.ErrorBack
+            : AppTheme.SuccessBack;
+        row.DefaultCellStyle.ForeColor = AppTheme.Text;
     }
 
     private static void ApplyOtherBookmarkStyle(DataGridViewRow row, bool english, bool french)
     {
         row.DefaultCellStyle.BackColor = english != french
-            ? Color.MistyRose
-            : Color.LemonChiffon;
+            ? AppTheme.ErrorBack
+            : AppTheme.WarningBack;
+        row.DefaultCellStyle.ForeColor = AppTheme.Text;
     }
 
     private void CloseSession()
