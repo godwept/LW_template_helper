@@ -206,6 +206,7 @@ internal sealed class MainForm : Form
             Text = "Template configuration",
             Dock = DockStyle.Top,
             AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             Padding = new Padding(12)
         };
 
@@ -213,9 +214,14 @@ internal sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             ColumnCount = 4,
             RowCount = 3
         };
+
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105));
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -240,6 +246,7 @@ internal sealed class MainForm : Form
             RowCount = 1,
             Margin = new Padding(0, 10, 0, 0)
         };
+        actionRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
@@ -299,6 +306,7 @@ internal sealed class MainForm : Form
             ColumnCount = 2,
             RowCount = 1
         };
+        statusRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         statusRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         statusRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _bookmarkSummary.Anchor = AnchorStyles.Left;
@@ -344,8 +352,10 @@ internal sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 3,
-            RowCount = 1
+            RowCount = 1,
+            Margin = new Padding(0)
         };
+        grids.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         grids.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34));
         grids.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         grids.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
