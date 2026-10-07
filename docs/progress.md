@@ -331,7 +331,12 @@ Visual test feedback:
 
 - user liked the overall new layout/theme direction;
 - disabled buttons were too dark to read because WinForms used its system disabled-text rendering;
-- main-window buttons now use a small custom themed button control that paints disabled states with muted light text and a subdued border/background while preserving real `Enabled = false` behavior.
+- main-window buttons now use a small custom themed button control that paints disabled states with muted light text and a subdued border/background while preserving real `Enabled = false` behavior;
+- Side by Side / English Focus / French Focus were moved onto the same top action row as Open / Close / Validate / Save, aligned to the far right.
+
+Additional Phase 9 layout commit:
+
+- top action row alignment: `2fe0c38524f6b13c30564fa8075d09fef3933869`
 
 ---
 
