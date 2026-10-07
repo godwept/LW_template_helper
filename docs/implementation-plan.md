@@ -20,7 +20,7 @@ See `docs/design.md` for the authoritative architecture.
 
 **Goal:** establish the safe Word-document approach before implementation.
 
-Status: **Complete / awaiting implementation start**
+Status: **Complete**
 
 Decisions:
 
@@ -40,6 +40,8 @@ Architecture accepted by user.
 ---
 
 ## Phase 1 — Application shell + Word control
+
+**Status:** Complete / user-tested
 
 **Goal:** prove that the app can reliably own the basic Word workflow.
 
@@ -71,6 +73,8 @@ Do not proceed to complex bookmark UI until this basic Word lifecycle works reli
 ---
 
 ## Phase 2 — Template Type/Subtype configuration
+
+**Status:** Implemented / awaiting user manual test
 
 **Goal:** establish the template organization model.
 

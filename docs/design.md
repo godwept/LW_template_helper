@@ -1,6 +1,6 @@
 # Letter Wizard Template Bookmark Manager — Design
 
-Status: **Accepted initial architecture; implementation not yet started**
+Status: **Accepted architecture; implementation in progress (Phases 1-2 implemented)**
 
 ## 1. Purpose
 
