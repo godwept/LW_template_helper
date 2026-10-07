@@ -287,8 +287,8 @@ internal sealed class MainForm : Form
             Bookmarks = dialog.BookmarkNames
         };
 
-        SaveConfiguration(config);
-        LoadConfigurations(config.Name);
+        if (SaveConfiguration(config))
+            LoadConfigurations(config.Name);
     }
 
     private void EditTemplateType()
@@ -316,8 +316,8 @@ internal sealed class MainForm : Form
         current.Name = dialog.TemplateTypeName;
         current.Bookmarks = dialog.BookmarkNames;
 
-        SaveConfiguration(current, previousName);
-        LoadConfigurations(current.Name, selectedSubtype);
+        if (SaveConfiguration(current, previousName))
+            LoadConfigurations(current.Name, selectedSubtype);
     }
 
     private void CreateSubtype()
@@ -344,8 +344,8 @@ internal sealed class MainForm : Form
             FrenchTemplatePath = dialog.FrenchTemplatePath
         });
 
-        SaveConfiguration(type);
-        LoadConfigurations(type.Name, dialog.SubtypeName);
+        if (SaveConfiguration(type))
+            LoadConfigurations(type.Name, dialog.SubtypeName);
     }
 
     private void EditSubtype()
@@ -372,19 +372,21 @@ internal sealed class MainForm : Form
         subtype.EnglishTemplatePath = dialog.EnglishTemplatePath;
         subtype.FrenchTemplatePath = dialog.FrenchTemplatePath;
 
-        SaveConfiguration(type);
-        LoadConfigurations(type.Name, subtype.Name);
+        if (SaveConfiguration(type))
+            LoadConfigurations(type.Name, subtype.Name);
     }
 
-    private void SaveConfiguration(TemplateTypeConfig config, string? previousName = null)
+    private bool SaveConfiguration(TemplateTypeConfig config, string? previousName = null)
     {
         try
         {
             _configStore.Save(config, previousName);
+            return true;
         }
         catch (Exception ex)
         {
             MessageBox.Show(this, ex.Message, "Save configuration error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
         }
     }
 
