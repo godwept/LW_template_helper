@@ -352,6 +352,7 @@ Latest layout fix commits:
 - explicit row sizing: `c61f4d97abf0bd7a3deae6fef7021e3c71193bd9`
 - bookmark action-row sizing cleanup: `9b2fc1e86eec806c386cd9f57f2b6e1a261199b4`
 - simplified section layout: `186db07759e195a70281307a5d52a35dd2964e8c`
+- configuration row height adjusted to prevent clipped buttons: `f1f32c058e4a4a5642c334b7bfe30995ac444aa8`
 
 The first row-sizing attempt did not fix the visible gaps on the user's maximized layout. The follow-up intentionally removed the problematic nested TableLayoutPanel behavior:
 - Template Configuration now occupies a fixed-height root row instead of sizing itself recursively;
