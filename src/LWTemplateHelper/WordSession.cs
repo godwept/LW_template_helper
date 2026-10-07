@@ -4,6 +4,8 @@ using Word = Microsoft.Office.Interop.Word;
 
 namespace LWTemplateHelper;
 
+internal sealed record FinalizeResult(string EnglishBackupPath, string FrenchBackupPath);
+
 internal sealed class WordSession : IDisposable
 {
     private Word.Application? _word;
@@ -188,6 +190,118 @@ internal sealed class WordSession : IDisposable
             throw new InvalidOperationException($"Bookmark '{bookmarkName}' does not exist in either test document.");
 
         return (english, french);
+    }
+
+    public void SaveWorkingCopies()
+    {
+        EnsureOpen();
+
+        if (IsTestMode)
+            throw new InvalidOperationException("Close Test Mode before saving/finalizing the working copies.");
+
+        _englishDocument!.Save();
+        _frenchDocument!.Save();
+    }
+
+    public FinalizeResult FinalizeToSources(string englishSource, string frenchSource)
+    {
+        EnsureOpen();
+
+        if (IsTestMode)
+            throw new InvalidOperationException("Close Test Mode before finalizing.");
+
+        ValidateSource(englishSource);
+        ValidateSource(frenchSource);
+
+        if (EnglishWorkingPath is null || FrenchWorkingPath is null)
+            throw new InvalidOperationException("The working-copy paths are unavailable.");
+
+        string englishFull = Path.GetFullPath(englishSource);
+        string frenchFull = Path.GetFullPath(frenchSource);
+        string englishWorkingFull = Path.GetFullPath(EnglishWorkingPath);
+        string frenchWorkingFull = Path.GetFullPath(FrenchWorkingPath);
+
+        if (string.Equals(englishFull, frenchFull, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("English and French source templates cannot be the same file.");
+
+        if (string.Equals(englishFull, englishWorkingFull, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(frenchFull, frenchWorkingFull, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("A configured source path points to a temporary working copy.");
+        }
+
+        if ((File.GetAttributes(englishFull) & FileAttributes.ReadOnly) != 0)
+            throw new InvalidOperationException("The English source template is read-only.");
+
+        if ((File.GetAttributes(frenchFull) & FileAttributes.ReadOnly) != 0)
+            throw new InvalidOperationException("The French source template is read-only.");
+
+        SaveWorkingCopies();
+
+        string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        string englishBackup = CreateBackupPath(englishFull, stamp);
+        string frenchBackup = CreateBackupPath(frenchFull, stamp);
+
+        File.Copy(englishFull, englishBackup, overwrite: false);
+
+        try
+        {
+            File.Copy(frenchFull, frenchBackup, overwrite: false);
+        }
+        catch
+        {
+            DeleteFileIfExists(englishBackup);
+            throw;
+        }
+
+        bool englishReplaced = false;
+        bool frenchReplaced = false;
+
+        try
+        {
+            File.Copy(EnglishWorkingPath, englishFull, overwrite: true);
+            englishReplaced = true;
+
+            File.Copy(FrenchWorkingPath, frenchFull, overwrite: true);
+            frenchReplaced = true;
+
+            return new FinalizeResult(englishBackup, frenchBackup);
+        }
+        catch (Exception finalizeError)
+        {
+            var rollbackErrors = new List<string>();
+
+            try
+            {
+                if (englishReplaced)
+                    File.Copy(englishBackup, englishFull, overwrite: true);
+            }
+            catch (Exception ex)
+            {
+                rollbackErrors.Add($"English restore failed: {ex.Message}");
+            }
+
+            try
+            {
+                if (frenchReplaced)
+                    File.Copy(frenchBackup, frenchFull, overwrite: true);
+            }
+            catch (Exception ex)
+            {
+                rollbackErrors.Add($"French restore failed: {ex.Message}");
+            }
+
+            if (rollbackErrors.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Finalize failed and the original source template(s) were restored from backup. {finalizeError.Message}",
+                    finalizeError);
+            }
+
+            throw new InvalidOperationException(
+                $"Finalize failed and automatic rollback was incomplete. {finalizeError.Message}\n\n{string.Join("\n", rollbackErrors)}\n\nBackups remain at:\n{englishBackup}\n{frenchBackup}",
+                finalizeError);
+        }
     }
 
     public string AddNextInfoBookmark()
@@ -500,6 +614,25 @@ internal sealed class WordSession : IDisposable
     {
         if (!IsTestMode || _englishTestDocument is null || _frenchTestDocument is null)
             throw new InvalidOperationException("Start Test Mode first.");
+    }
+
+    private static string CreateBackupPath(string sourcePath, string stamp)
+    {
+        string directory = Path.GetDirectoryName(sourcePath)
+            ?? throw new InvalidOperationException("Source template directory is unavailable.");
+        string name = Path.GetFileNameWithoutExtension(sourcePath);
+        string extension = Path.GetExtension(sourcePath);
+
+        string candidate = Path.Combine(directory, $"{name}.backup-{stamp}{extension}");
+        int suffix = 2;
+
+        while (File.Exists(candidate))
+        {
+            candidate = Path.Combine(directory, $"{name}.backup-{stamp}-{suffix}{extension}");
+            suffix++;
+        }
+
+        return candidate;
     }
 
     private static void DeleteFileIfExists(string? path)
