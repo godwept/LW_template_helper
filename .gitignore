@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+
+# Temp files (including Word lock/temp files)
+*.tmp
+*.temp
+~$*
+~*.tmp
+
+# IDE
+.vs/
+*.user
+*.suo
