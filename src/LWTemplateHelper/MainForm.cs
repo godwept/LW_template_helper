@@ -10,6 +10,7 @@ internal sealed class MainForm : Form
     private readonly Button _editSubtypeButton = new() { Text = "Edit Subtype", AutoSize = true };
 
     private readonly DataGridView _bookmarkGrid = CreateBookmarkGrid();
+    private readonly DataGridView _infoBookmarkGrid = CreateBookmarkGrid();
     private readonly DataGridView _otherBookmarkGrid = CreateBookmarkGrid();
     private readonly Label _bookmarkSummary = new()
     {
@@ -25,6 +26,8 @@ internal sealed class MainForm : Form
     private readonly Button _replaceRangeButton = new() { Text = "Replace Range", AutoSize = true, Enabled = false };
     private readonly Button _renameBookmarkButton = new() { Text = "Rename", AutoSize = true, Enabled = false };
     private readonly Button _deleteBookmarkButton = new() { Text = "Delete Bookmark", AutoSize = true, Enabled = false };
+    private readonly Button _addInfoButton = new() { Text = "Add INFO", AutoSize = true, Enabled = false };
+    private readonly Label _infoSummary = new() { AutoSize = true, Text = "INFO bookmarks: none", Anchor = AnchorStyles.Left };
 
     private readonly TextBox _englishPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
     private readonly TextBox _frenchPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
@@ -40,6 +43,7 @@ internal sealed class MainForm : Form
     private List<TemplateTypeConfig> _templateTypes = [];
     private string? _selectedBookmarkName;
     private bool _selectedBookmarkIsConfigured;
+    private bool _selectedBookmarkIsInfo;
 
     public MainForm()
     {
@@ -95,9 +99,11 @@ internal sealed class MainForm : Form
         _editSubtypeButton.Click += (_, _) => EditSubtype();
 
         _bookmarkGrid.CellClick += (_, e) =>
-            SelectBookmarkRow(_bookmarkGrid, _otherBookmarkGrid, e.RowIndex, configured: true);
+            SelectBookmarkRow(_bookmarkGrid, e.RowIndex, configured: true, info: false);
+        _infoBookmarkGrid.CellClick += (_, e) =>
+            SelectBookmarkRow(_infoBookmarkGrid, e.RowIndex, configured: false, info: true);
         _otherBookmarkGrid.CellClick += (_, e) =>
-            SelectBookmarkRow(_otherBookmarkGrid, _bookmarkGrid, e.RowIndex, configured: false);
+            SelectBookmarkRow(_otherBookmarkGrid, e.RowIndex, configured: false, info: false);
         _refreshStatusButton.Click += (_, _) => RefreshBookmarkStatus();
         _locateEnglishButton.Click += (_, _) => LocateSelectedBookmark(_wordSession.LocateEnglish);
         _locateFrenchButton.Click += (_, _) => LocateSelectedBookmark(_wordSession.LocateFrench);
@@ -106,6 +112,7 @@ internal sealed class MainForm : Form
         _replaceRangeButton.Click += (_, _) => ReplaceSelectedBookmarkRange();
         _renameBookmarkButton.Click += (_, _) => RenameSelectedBookmark();
         _deleteBookmarkButton.Click += (_, _) => DeleteSelectedBookmark();
+        _addInfoButton.Click += (_, _) => AddInfoBookmark();
         _openButton.Click += (_, _) => OpenWorkingCopies();
         _closeButton.Click += (_, _) => CloseSession();
         _sideBySideButton.Click += (_, _) => RunWordAction(_wordSession.ArrangeSideBySide);
@@ -211,16 +218,18 @@ internal sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 7
+            RowCount = 9
         };
 
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        table.RowStyles.Add(new RowStyle(SizeType.Percent, 65));
+        table.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        table.RowStyles.Add(new RowStyle(SizeType.Percent, 35));
+        table.RowStyles.Add(new RowStyle(SizeType.Percent, 25));
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        table.RowStyles.Add(new RowStyle(SizeType.Percent, 25));
 
         var statusToolbar = new FlowLayoutPanel
         {
@@ -246,7 +255,21 @@ internal sealed class MainForm : Form
             WrapContents = false
         };
         editToolbar.Controls.AddRange(
-            [_addBookmarkButton, _replaceRangeButton, _renameBookmarkButton, _deleteBookmarkButton]);
+            [_addBookmarkButton, _addInfoButton, _replaceRangeButton, _renameBookmarkButton, _deleteBookmarkButton]);
+
+        var infoHeader = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = false
+        };
+        infoHeader.Controls.Add(new Label
+        {
+            Text = "INFO bookmarks",
+            AutoSize = true,
+            Margin = new Padding(3, 8, 8, 3)
+        });
+        infoHeader.Controls.Add(_infoSummary);
 
         table.Controls.Add(statusToolbar);
         table.Controls.Add(locateToolbar);
@@ -258,6 +281,8 @@ internal sealed class MainForm : Form
             Margin = new Padding(3, 8, 3, 3)
         });
         table.Controls.Add(_bookmarkGrid);
+        table.Controls.Add(infoHeader);
+        table.Controls.Add(_infoBookmarkGrid);
         table.Controls.Add(new Label
         {
             Text = "Other Bookmarks",
@@ -359,6 +384,8 @@ internal sealed class MainForm : Form
 
         _subtypeCombo.Items.Clear();
         PopulateConfiguredBookmarkRows(type);
+        _infoBookmarkGrid.Rows.Clear();
+        _infoSummary.Text = "INFO bookmarks: none";
         _otherBookmarkGrid.Rows.Clear();
         ClearSelectedBookmark();
 
@@ -433,9 +460,9 @@ internal sealed class MainForm : Form
 
     private void SelectBookmarkRow(
         DataGridView selectedGrid,
-        DataGridView otherGrid,
         int rowIndex,
-        bool configured)
+        bool configured,
+        bool info)
     {
         if (rowIndex < 0 || rowIndex >= selectedGrid.Rows.Count)
             return;
@@ -443,8 +470,14 @@ internal sealed class MainForm : Form
         object? value = selectedGrid.Rows[rowIndex].Cells["Bookmark"].Value;
         _selectedBookmarkName = value?.ToString();
         _selectedBookmarkIsConfigured = configured;
+        _selectedBookmarkIsInfo = info;
 
-        otherGrid.ClearSelection();
+        foreach (var grid in new[] { _bookmarkGrid, _infoBookmarkGrid, _otherBookmarkGrid })
+        {
+            if (!ReferenceEquals(grid, selectedGrid))
+                grid.ClearSelection();
+        }
+
         UpdateBookmarkActionButtons();
     }
 
@@ -452,7 +485,9 @@ internal sealed class MainForm : Form
     {
         _selectedBookmarkName = null;
         _selectedBookmarkIsConfigured = false;
+        _selectedBookmarkIsInfo = false;
         _bookmarkGrid.ClearSelection();
+        _infoBookmarkGrid.ClearSelection();
         _otherBookmarkGrid.ClearSelection();
         UpdateBookmarkActionButtons();
     }
@@ -467,7 +502,7 @@ internal sealed class MainForm : Form
 
         _addBookmarkButton.Enabled = enabled && _selectedBookmarkIsConfigured;
         _replaceRangeButton.Enabled = enabled;
-        _renameBookmarkButton.Enabled = enabled;
+        _renameBookmarkButton.Enabled = enabled && !_selectedBookmarkIsInfo;
         _deleteBookmarkButton.Enabled = enabled;
     }
 
@@ -495,6 +530,23 @@ internal sealed class MainForm : Form
         RunBookmarkEdit(
             () => _wordSession.AddBookmark(_selectedBookmarkName),
             $"Added bookmark '{_selectedBookmarkName}' using the current English/French Word selections.");
+    }
+
+    private void AddInfoBookmark()
+    {
+        if (!_wordSession.IsOpen)
+            return;
+
+        try
+        {
+            string bookmarkName = _wordSession.AddNextInfoBookmark();
+            RefreshBookmarkStatus();
+            _status.Text = $"Added {bookmarkName} using the current English/French Word selections.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Add INFO", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 
     private void ReplaceSelectedBookmarkRange()
@@ -758,9 +810,53 @@ internal sealed class MainForm : Form
                 ApplyConfiguredStatusStyle(_bookmarkGrid.Rows[rowIndex], enExists, frExists);
             }
 
+            var infoNames = english
+                .Union(french, StringComparer.OrdinalIgnoreCase)
+                .Select(name => new
+                {
+                    Name = name,
+                    IsInfo = WordSession.TryGetInfoNumber(name, out int number),
+                    Number = number
+                })
+                .Where(x => x.IsInfo)
+                .OrderBy(x => x.Number)
+                .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            int infoBoth = 0;
+            int infoMismatch = 0;
+
+            _infoBookmarkGrid.Rows.Clear();
+
+            foreach (var info in infoNames)
+            {
+                bool enExists = english.Contains(info.Name);
+                bool frExists = french.Contains(info.Name);
+
+                if (enExists && frExists)
+                    infoBoth++;
+                else
+                    infoMismatch++;
+
+                int rowIndex = _infoBookmarkGrid.Rows.Add(
+                    info.Name,
+                    enExists ? "Exists" : "—",
+                    frExists ? "Exists" : "—");
+
+                ApplyInfoStatusStyle(_infoBookmarkGrid.Rows[rowIndex], enExists, frExists);
+            }
+
+            int highestInfo = infoNames.Count == 0 ? 0 : infoNames.Max(x => x.Number);
+            _infoSummary.Text =
+                $"Both: {infoBoth}, mismatch: {infoMismatch} | Next: INFO_{highestInfo + 1}";
+
+            var infoNameSet = new HashSet<string>(
+                infoNames.Select(x => x.Name),
+                StringComparer.OrdinalIgnoreCase);
+
             var otherNames = english
                 .Union(french, StringComparer.OrdinalIgnoreCase)
-                .Where(name => !configured.Contains(name))
+                .Where(name => !configured.Contains(name) && !infoNameSet.Contains(name))
                 .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -780,13 +876,15 @@ internal sealed class MainForm : Form
             }
 
             _bookmarkGrid.ClearSelection();
+            _infoBookmarkGrid.ClearSelection();
             _otherBookmarkGrid.ClearSelection();
             _selectedBookmarkName = null;
             _selectedBookmarkIsConfigured = false;
+            _selectedBookmarkIsInfo = false;
             UpdateBookmarkActionButtons();
 
             _bookmarkSummary.Text =
-                $"Configured: {both} both, {mismatch} mismatch, {neither} unused | Other: {otherNames.Count}";
+                $"Configured: {both} both, {mismatch} mismatch, {neither} unused | INFO: {infoNames.Count} | Other: {otherNames.Count}";
 
             _status.Text = $"Bookmark status refreshed. EN: {english.Count}, FR: {french.Count}.";
         }
@@ -803,6 +901,13 @@ internal sealed class MainForm : Form
             : english
                 ? Color.Honeydew
                 : Color.WhiteSmoke;
+    }
+
+    private static void ApplyInfoStatusStyle(DataGridViewRow row, bool english, bool french)
+    {
+        row.DefaultCellStyle.BackColor = english != french
+            ? Color.MistyRose
+            : Color.Honeydew;
     }
 
     private static void ApplyOtherBookmarkStyle(DataGridViewRow row, bool english, bool french)
@@ -828,6 +933,8 @@ internal sealed class MainForm : Form
         {
             SetSessionControls(false);
             PopulateConfiguredBookmarkRows(SelectedType);
+            _infoBookmarkGrid.Rows.Clear();
+            _infoSummary.Text = "INFO bookmarks: none";
             _otherBookmarkGrid.Rows.Clear();
             ClearSelectedBookmark();
         }
@@ -857,6 +964,7 @@ internal sealed class MainForm : Form
         _openButton.Enabled = !open && SelectedSubtype is not null;
         _closeButton.Enabled = open;
         _refreshStatusButton.Enabled = open;
+        _addInfoButton.Enabled = open;
         _sideBySideButton.Enabled = open;
         _englishFocusButton.Enabled = open;
         _frenchFocusButton.Enabled = open;
