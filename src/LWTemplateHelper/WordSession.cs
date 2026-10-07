@@ -127,6 +127,8 @@ internal sealed class WordSession : IDisposable
                 ReadOnly: false,
                 AddToRecentFiles: false,
                 Visible: true);
+
+            ArrangeDocumentsSideBySide(_englishTestDocument, _frenchTestDocument);
         }
         catch
         {
@@ -400,11 +402,17 @@ internal sealed class WordSession : IDisposable
     public void ArrangeSideBySide()
     {
         EnsureOpen();
+        ArrangeDocumentsSideBySide(_englishDocument, _frenchDocument);
+    }
 
+    private static void ArrangeDocumentsSideBySide(
+        Word.Document? englishDocument,
+        Word.Document? frenchDocument)
+    {
         var manager = Form.ActiveForm ?? throw new InvalidOperationException("Manager window is unavailable.");
         var area = Screen.FromControl(manager).WorkingArea;
-        var englishWindow = GetWindow(_englishDocument);
-        var frenchWindow = GetWindow(_frenchDocument);
+        var englishWindow = GetWindow(englishDocument);
+        var frenchWindow = GetWindow(frenchDocument);
 
         try
         {
