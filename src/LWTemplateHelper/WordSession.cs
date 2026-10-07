@@ -4,11 +4,15 @@ using Word = Microsoft.Office.Interop.Word;
 
 namespace LWTemplateHelper;
 
+internal sealed record CapturedSelectionInfo(string Preview, int Start, int End);
+
 internal sealed class WordSession : IDisposable
 {
     private Word.Application? _word;
     private Word.Document? _englishDocument;
     private Word.Document? _frenchDocument;
+    private Word.Range? _englishCapturedRange;
+    private Word.Range? _frenchCapturedRange;
 
     public bool IsOpen => _word is not null;
     public string? SessionDirectory { get; private set; }
@@ -73,6 +77,32 @@ internal sealed class WordSession : IDisposable
             ReadBookmarkNames(_englishDocument!),
             ReadBookmarkNames(_frenchDocument!));
     }
+
+    public void LocateEnglish(string bookmarkName) =>
+        LocateBookmark(_englishDocument, bookmarkName, "English");
+
+    public void LocateFrench(string bookmarkName) =>
+        LocateBookmark(_frenchDocument, bookmarkName, "French");
+
+    public void LocateBoth(string bookmarkName)
+    {
+        EnsureOpen();
+        LocateBookmark(_englishDocument, bookmarkName, "English");
+        LocateBookmark(_frenchDocument, bookmarkName, "French");
+        ArrangeSideBySide();
+    }
+
+    public CapturedSelectionInfo CaptureEnglishSelection() =>
+        CaptureSelection(_englishDocument, ref _englishCapturedRange, "English");
+
+    public CapturedSelectionInfo CaptureFrenchSelection() =>
+        CaptureSelection(_frenchDocument, ref _frenchCapturedRange, "French");
+
+    public CapturedSelectionInfo? GetEnglishCapturedSelection() =>
+        ReadCapturedSelection(ref _englishCapturedRange);
+
+    public CapturedSelectionInfo? GetFrenchCapturedSelection() =>
+        ReadCapturedSelection(ref _frenchCapturedRange);
 
     public void ArrangeSideBySide()
     {
@@ -140,6 +170,147 @@ internal sealed class WordSession : IDisposable
         }
     }
 
+    private static void LocateBookmark(Word.Document? document, string bookmarkName, string language)
+    {
+        if (document is null)
+            throw new InvalidOperationException("The Word session is not open.");
+
+        Word.Bookmark? bookmark = null;
+        Word.Range? range = null;
+        Word.Window? window = null;
+
+        try
+        {
+            bookmark = FindBookmark(document, bookmarkName);
+
+            if (bookmark is null)
+                throw new InvalidOperationException(
+                    $"Bookmark '{bookmarkName}' does not exist in the {language} working copy.");
+
+            range = bookmark.Range;
+            window = GetWindow(document);
+            window.Activate();
+            range.Select();
+        }
+        finally
+        {
+            ReleaseCom(range);
+            ReleaseCom(bookmark);
+            ReleaseCom(window);
+        }
+    }
+
+    private static Word.Bookmark? FindBookmark(Word.Document document, string bookmarkName)
+    {
+        Word.Bookmarks? bookmarks = null;
+
+        try
+        {
+            bookmarks = document.Bookmarks;
+
+            for (int i = 1; i <= bookmarks.Count; i++)
+            {
+                object index = i;
+                Word.Bookmark? bookmark = bookmarks.get_Item(ref index);
+
+                if (string.Equals(bookmark.Name, bookmarkName, StringComparison.OrdinalIgnoreCase))
+                    return bookmark;
+
+                ReleaseCom(bookmark);
+            }
+
+            return null;
+        }
+        finally
+        {
+            ReleaseCom(bookmarks);
+        }
+    }
+
+    private static CapturedSelectionInfo CaptureSelection(
+        Word.Document? document,
+        ref Word.Range? storedRange,
+        string language)
+    {
+        if (document is null)
+            throw new InvalidOperationException("The Word session is not open.");
+
+        Word.Window? window = null;
+        Word.Selection? selection = null;
+        Word.Range? currentRange = null;
+        Word.Range? duplicate = null;
+
+        try
+        {
+            window = GetWindow(document);
+            selection = window.Selection;
+            currentRange = selection.Range;
+
+            if (currentRange.Start >= currentRange.End)
+                throw new InvalidOperationException(
+                    $"Select the text to capture in the {language} working copy first.");
+
+            duplicate = currentRange.Duplicate;
+            var info = BuildSelectionInfo(duplicate);
+
+            ReleaseCom(storedRange);
+            storedRange = duplicate;
+            duplicate = null;
+
+            return info;
+        }
+        finally
+        {
+            ReleaseCom(duplicate);
+            ReleaseCom(currentRange);
+            ReleaseCom(selection);
+            ReleaseCom(window);
+        }
+    }
+
+    private static CapturedSelectionInfo? ReadCapturedSelection(ref Word.Range? range)
+    {
+        if (range is null)
+            return null;
+
+        try
+        {
+            if (range.Start >= range.End)
+            {
+                ReleaseCom(range);
+                range = null;
+                return null;
+            }
+
+            return BuildSelectionInfo(range);
+        }
+        catch (COMException)
+        {
+            ReleaseCom(range);
+            range = null;
+            return null;
+        }
+    }
+
+    private static CapturedSelectionInfo BuildSelectionInfo(Word.Range range)
+    {
+        string preview = (range.Text ?? string.Empty)
+            .Replace("\r", "¶")
+            .Replace("\a", "¤")
+            .Replace("\v", "↵")
+            .Replace("\t", "→");
+
+        preview = preview.Trim();
+
+        if (preview.Length > 90)
+            preview = preview[..87] + "...";
+
+        if (preview.Length == 0)
+            preview = "(selected range)";
+
+        return new CapturedSelectionInfo(preview, range.Start, range.End);
+    }
+
     private static void PositionNative(Word.Window window, int left, int top, int width, int height)
     {
         var hwnd = new IntPtr(window.Hwnd);
@@ -190,6 +361,7 @@ internal sealed class WordSession : IDisposable
 
     public void Close()
     {
+        ClearCapturedRanges();
         CloseDocument(ref _frenchDocument);
         CloseDocument(ref _englishDocument);
 
@@ -214,6 +386,15 @@ internal sealed class WordSession : IDisposable
         GC.WaitForPendingFinalizers();
         GC.Collect();
         GC.WaitForPendingFinalizers();
+    }
+
+    private void ClearCapturedRanges()
+    {
+        ReleaseCom(_englishCapturedRange);
+        _englishCapturedRange = null;
+
+        ReleaseCom(_frenchCapturedRange);
+        _frenchCapturedRange = null;
     }
 
     private static void CloseDocument(ref Word.Document? document)
