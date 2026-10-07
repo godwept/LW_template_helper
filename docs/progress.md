@@ -10,9 +10,9 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 7 core Test Mode behavior user-tested; working-window overlay refinement awaiting quick retest.
+**Stage:** Phase 7 complete and user-tested; ready for Phase 8.
 
-Phases 1-6 are complete and user-tested. Phase 7 now provides disposable Test Mode copies for simulating the Letter Wizard's Set Value and Delete-content behavior without modifying working or source templates.
+Phases 1-7 are complete and user-tested. The next step is Phase 8: validation and safe finalization back to the configured source templates.
 
 ---
 
@@ -264,7 +264,7 @@ Confirmed working by the user:
 
 ### Phase 7
 
-Confirmed working by the user except for initial test-window placement:
+Confirmed working by the user:
 
 - Test Mode starts correctly;
 - Set Value works;
@@ -272,9 +272,9 @@ Confirmed working by the user except for initial test-window placement:
 - Reset Test works;
 - Close Test works;
 - working/source documents remain protected;
-- only remaining issue reported was that test windows opened at arbitrary positions.
-
-Refinement added: Test_E.docx and Test_F.docx now inherit the exact native screen bounds of Working_E.docx and Working_F.docx respectively, so each test document opens directly over its matching working copy regardless of manager-window location or monitor.
+- Test_E.docx opens directly over Working_E.docx;
+- Test_F.docx opens directly over Working_F.docx;
+- test-window placement follows the working windows rather than the manager UI.
 
 ---
 
@@ -349,9 +349,7 @@ Closing the Word session uses Do Not Save. Source replacement/backups remain Pha
 
 ## Exact Next Step
 
-**User quickly retests Phase 7 and confirms each test document opens directly over its corresponding working copy.**
-
-If Phase 7 passes, implement **Phase 8 — Validation + final save**:
+**Implement Phase 8 — Validation + final save**:
 
 - validation summary;
 - configured EN/FR mismatch warnings;
