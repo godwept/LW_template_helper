@@ -20,7 +20,14 @@ internal sealed class MainForm : Form
         Text = "Open working copies to compare bookmark status.",
         Anchor = AnchorStyles.Left
     };
-    private readonly ThemedButton _refreshStatusButton = new() { Text = "Refresh Status", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _refreshStatusButton = new()
+    {
+        Text = "↻",
+        AutoSize = false,
+        Size = new Size(34, 32),
+        Enabled = false,
+        AccessibleName = "Refresh Status"
+    };
     private readonly ThemedButton _locateEnglishButton = new() { Text = "Locate English", AutoSize = true, Enabled = false };
     private readonly ThemedButton _locateFrenchButton = new() { Text = "Locate French", AutoSize = true, Enabled = false };
     private readonly ThemedButton _locateBothButton = new() { Text = "Locate Both", AutoSize = true, Enabled = false };
@@ -89,15 +96,9 @@ internal sealed class MainForm : Form
         root.Controls.Add(BuildTestModeGroup());
         root.Controls.Add(BuildSourceGroup());
 
-        var statusGroup = new GroupBox
-        {
-            Text = "Session status",
-            Dock = DockStyle.Fill,
-            Padding = new Padding(10),
-            AutoSize = true
-        };
-        statusGroup.Controls.Add(_status);
-        root.Controls.Add(statusGroup);
+        _status.Dock = DockStyle.Fill;
+        _status.Margin = new Padding(6, 4, 6, 4);
+        root.Controls.Add(_status);
 
         Controls.Add(root);
 
@@ -111,6 +112,8 @@ internal sealed class MainForm : Form
         AppTheme.StyleDangerButton(_deleteBookmarkButton);
         AppTheme.StyleDangerButton(_closeTestButton);
         _testModeLabel.ForeColor = AppTheme.MutedText;
+        _status.ForeColor = AppTheme.MutedText;
+        _refreshStatusButton.Font = new Font("Segoe UI Symbol", 12F, FontStyle.Bold);
 
         _templateTypeCombo.SelectedIndexChanged += (_, _) => TemplateTypeChanged();
         _subtypeCombo.SelectedIndexChanged += (_, _) => SubtypeChanged();
@@ -289,25 +292,53 @@ internal sealed class MainForm : Form
         outer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         outer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-        var statusToolbar = new FlowLayoutPanel
+        var statusRow = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
-            WrapContents = true
+            ColumnCount = 2,
+            RowCount = 1
         };
-        statusToolbar.Controls.Add(_refreshStatusButton);
-        statusToolbar.Controls.Add(_bookmarkSummary);
+        statusRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        statusRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        _bookmarkSummary.Anchor = AnchorStyles.Left;
+        _refreshStatusButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        statusRow.Controls.Add(_bookmarkSummary, 0, 0);
+        statusRow.Controls.Add(_refreshStatusButton, 1, 0);
 
-        var actionToolbar = new FlowLayoutPanel
+        var actionRow = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = new Padding(0, 4, 0, 8)
+        };
+        actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+
+        var editToolbar = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
             WrapContents = true,
-            Margin = new Padding(0, 4, 0, 8)
+            Margin = new Padding(0)
         };
-        actionToolbar.Controls.AddRange(
-            [_locateEnglishButton, _locateFrenchButton, _locateBothButton,
-             _addBookmarkButton, _addInfoButton, _replaceRangeButton, _renameBookmarkButton, _deleteBookmarkButton]);
+        editToolbar.Controls.AddRange(
+            [_addBookmarkButton, _addInfoButton, _replaceRangeButton, _renameBookmarkButton, _deleteBookmarkButton]);
+
+        var locateToolbar = new FlowLayoutPanel
+        {
+            AutoSize = true,
+            WrapContents = false,
+            FlowDirection = FlowDirection.LeftToRight,
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
+            Margin = new Padding(12, 0, 0, 0)
+        };
+        locateToolbar.Controls.AddRange([_locateEnglishButton, _locateFrenchButton, _locateBothButton]);
+
+        actionRow.Controls.Add(editToolbar, 0, 0);
+        actionRow.Controls.Add(locateToolbar, 1, 0);
 
         var grids = new TableLayoutPanel
         {
@@ -335,8 +366,8 @@ internal sealed class MainForm : Form
             "Bookmarks not defined by this Template Type",
             _otherBookmarkGrid), 2, 0);
 
-        outer.Controls.Add(statusToolbar);
-        outer.Controls.Add(actionToolbar);
+        outer.Controls.Add(statusRow);
+        outer.Controls.Add(actionRow);
         outer.Controls.Add(grids);
 
         group.Controls.Add(outer);
@@ -415,22 +446,37 @@ internal sealed class MainForm : Form
         };
         modeRow.Controls.AddRange([_startTestButton, _resetTestButton, _closeTestButton, _testModeLabel]);
 
-        var operationRow = new FlowLayoutPanel
+        var operationRow = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
-            WrapContents = false
+            ColumnCount = 5,
+            RowCount = 1,
+            Margin = new Padding(0)
         };
-        operationRow.Controls.Add(new Label
+        operationRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        operationRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        operationRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        operationRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        operationRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+        var testValueLabel = new Label
         {
             Text = "Test value",
             AutoSize = true,
             Anchor = AnchorStyles.Left,
-            Margin = new Padding(3, 8, 3, 3)
-        });
-        operationRow.Controls.Add(_testValueBox);
-        operationRow.Controls.Add(_testSetValueButton);
-        operationRow.Controls.Add(_testDeleteContentButton);
+            Margin = new Padding(3, 3, 6, 3)
+        };
+
+        _testValueBox.Anchor = AnchorStyles.Left;
+        _testValueBox.Margin = new Padding(0, 3, 6, 3);
+        _testSetValueButton.Anchor = AnchorStyles.Left;
+        _testDeleteContentButton.Anchor = AnchorStyles.Left;
+
+        operationRow.Controls.Add(testValueLabel, 0, 0);
+        operationRow.Controls.Add(_testValueBox, 1, 0);
+        operationRow.Controls.Add(_testSetValueButton, 2, 0);
+        operationRow.Controls.Add(_testDeleteContentButton, 3, 0);
 
         table.Controls.Add(modeRow);
         table.Controls.Add(operationRow);
