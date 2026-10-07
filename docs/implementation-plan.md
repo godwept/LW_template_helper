@@ -102,7 +102,7 @@ Manual verification:
 
 ## Phase 3 — Bookmark discovery/status
 
-**Status:** Implemented / awaiting user manual test
+**Status:** Complete / user-tested
 
 **Goal:** make the application immediately useful for auditing templates.
 
@@ -123,6 +123,8 @@ This phase should not alter bookmark ranges yet.
 ---
 
 ## Phase 4 — Locate + selection capture
+
+**Status:** Complete / user-tested
 
 **Goal:** connect Word selections to the manager reliably.
 

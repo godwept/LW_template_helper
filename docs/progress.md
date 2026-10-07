@@ -10,7 +10,7 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 4 implemented; awaiting user manual testing.
+**Stage:** Phase 4 complete and user-tested; ready for Phase 5.
 
 Phases 1-3 are complete and user-tested. Phase 4 now supports locating existing bookmarks and explicitly capturing independent English/French Word selections for later bookmark operations.
 
@@ -147,7 +147,15 @@ Confirmed working by the user:
 
 ### Phase 4
 
-Not yet manually tested.
+Confirmed working by the user:
+
+- Locate English works;
+- Locate French works;
+- Locate Both works;
+- explicit English/French selection capture works;
+- captured selection previews remain usable;
+- Refresh Status does not wipe valid captures;
+- Phase 1-3 behavior remains intact.
 
 ---
 
@@ -210,9 +218,7 @@ INFO bookmarks and Test Mode also remain future phases.
 
 ## Exact Next Step
 
-**User manually tests Phase 4.**
-
-If Phase 4 passes, implement **Phase 5 — Bookmark creation/editing**:
+**Implement Phase 5 — Bookmark creation/editing**:
 
 - add configured bookmark around captured EN/FR ranges;
 - delete bookmark markers;
