@@ -74,7 +74,7 @@ Do not proceed to complex bookmark UI until this basic Word lifecycle works reli
 
 ## Phase 2 — Template Type/Subtype configuration
 
-**Status:** Implemented / awaiting user manual test
+**Status:** Complete / user-tested
 
 **Goal:** establish the template organization model.
 
@@ -101,6 +101,8 @@ Manual verification:
 ---
 
 ## Phase 3 — Bookmark discovery/status
+
+**Status:** Implemented / awaiting user manual test
 
 **Goal:** make the application immediately useful for auditing templates.
 
