@@ -10,7 +10,7 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 7 implemented; awaiting user manual testing.
+**Stage:** Phase 7 core Test Mode behavior user-tested; side-by-side test-window refinement awaiting quick retest.
 
 Phases 1-6 are complete and user-tested. Phase 7 now provides disposable Test Mode copies for simulating the Letter Wizard's Set Value and Delete-content behavior without modifying working or source templates.
 
@@ -167,6 +167,7 @@ Test Mode lifecycle:
   - saves the current working copies through Word;
   - byte-copies them to `Test_E.docx` / `Test_F.docx` in the session directory;
   - opens the test pair in the managed Word instance;
+  - automatically positions Test_E.docx and Test_F.docx side by side in a 50/50 split;
   - leaves source templates untouched;
   - leaves the working-copy documents separate from all test mutations.
 - **Reset Test**
@@ -219,6 +220,7 @@ Phase 7 commits:
 
 - test document lifecycle/operations: `b9df6c8ab3038cf1df4c6a728d26dd1625b221a8`
 - Test Mode UI: `2708256155f8cd9ddf4d579ac99840aa76b86121`
+- test windows open Side by Side: `01e15b0fdca8848aaab246e7f28675e4353030af`
 
 ---
 
@@ -261,7 +263,17 @@ Confirmed working by the user:
 
 ### Phase 7
 
-Not yet manually tested.
+Confirmed working by the user except for initial test-window placement:
+
+- Test Mode starts correctly;
+- Set Value works;
+- Delete Content works;
+- Reset Test works;
+- Close Test works;
+- working/source documents remain protected;
+- only remaining issue reported was that test windows opened at arbitrary positions.
+
+Refinement added: Test_E.docx and Test_F.docx now automatically open in the same native 50/50 Side by Side layout used by the normal working-copy layout command.
 
 ---
 
@@ -308,7 +320,7 @@ Closing the Word session uses Do Not Save. Source replacement/backups remain Pha
 2. Open a subtype and make at least one temporary bookmark edit in the working copies.
 3. Click **Start Test Mode**.
 4. Confirm:
-   - `Test_E.docx` and `Test_F.docx` open in Word;
+   - `Test_E.docx` and `Test_F.docx` open in Word in an automatic 50/50 Side by Side layout;
    - the manager clearly says **TEST MODE ACTIVE**;
    - normal Add/Replace/Rename/Delete/Locate/layout controls are disabled;
    - the original working documents remain open and unchanged.
@@ -336,7 +348,7 @@ Closing the Word session uses Do Not Save. Source replacement/backups remain Pha
 
 ## Exact Next Step
 
-**User manually tests Phase 7 Test Mode.**
+**User quickly retests Phase 7 and confirms the test documents now open Side by Side.**
 
 If Phase 7 passes, implement **Phase 8 — Validation + final save**:
 

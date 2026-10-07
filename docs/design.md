@@ -368,7 +368,10 @@ When Test Mode begins:
    - `Test_E.docx`
    - `Test_F.docx`
 3. open/display the test copies through Word;
-4. perform all simulated Letter Wizard operations on those test documents.
+4. automatically arrange the English and French test windows side by side using the same native 50/50 positioning approach as the normal Side by Side layout;
+5. perform all simulated Letter Wizard operations on those test documents.
+
+Starting Test Mode may reposition the **test** windows, but must not reposition the existing working-copy windows.
 
 ### Required V1 test operations
 

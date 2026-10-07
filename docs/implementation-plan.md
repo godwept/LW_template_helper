@@ -189,6 +189,7 @@ Build:
 - save working documents;
 - create `Test_E.docx` / `Test_F.docx`;
 - open test pair;
+- automatically arrange Test_E.docx / Test_F.docx Side by Side;
 - clear visual indication that app is in Test Mode;
 - Set Value for selected bookmark;
 - Delete bookmarked content;
