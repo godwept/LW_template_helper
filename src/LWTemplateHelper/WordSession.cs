@@ -105,6 +105,9 @@ internal sealed class WordSession : IDisposable
         _englishDocument!.Save();
         _frenchDocument!.Save();
 
+        var englishWorkingBounds = GetNativeBounds(_englishDocument);
+        var frenchWorkingBounds = GetNativeBounds(_frenchDocument);
+
         EnglishTestPath = Path.Combine(SessionDirectory, "Test_E.docx");
         FrenchTestPath = Path.Combine(SessionDirectory, "Test_F.docx");
 
@@ -128,7 +131,8 @@ internal sealed class WordSession : IDisposable
                 AddToRecentFiles: false,
                 Visible: true);
 
-            ArrangeDocumentsSideBySide(_englishTestDocument, _frenchTestDocument);
+            PositionDocumentOver(_englishTestDocument, englishWorkingBounds);
+            PositionDocumentOver(_frenchTestDocument, frenchWorkingBounds);
         }
         catch
         {
@@ -729,6 +733,53 @@ internal sealed class WordSession : IDisposable
         }
     }
 
+    private static (int Left, int Top, int Width, int Height) GetNativeBounds(Word.Document? document)
+    {
+        var window = GetWindow(document);
+
+        try
+        {
+            var hwnd = new IntPtr(window.Hwnd);
+
+            if (!GetWindowRect(hwnd, out NativeRect rect))
+            {
+                throw new Win32Exception(
+                    Marshal.GetLastWin32Error(),
+                    "Windows could not read the Word window position.");
+            }
+
+            return (
+                rect.Left,
+                rect.Top,
+                rect.Right - rect.Left,
+                rect.Bottom - rect.Top);
+        }
+        finally
+        {
+            ReleaseCom(window);
+        }
+    }
+
+    private static void PositionDocumentOver(
+        Word.Document? document,
+        (int Left, int Top, int Width, int Height) bounds)
+    {
+        var window = GetWindow(document);
+
+        try
+        {
+            window.WindowState = Word.WdWindowState.wdWindowStateNormal;
+            PositionNative(window, bounds.Left, bounds.Top, bounds.Width, bounds.Height);
+
+            var hwnd = new IntPtr(window.Hwnd);
+            BringWindowToTop(hwnd);
+        }
+        finally
+        {
+            ReleaseCom(window);
+        }
+    }
+
     private static void PositionNative(Word.Window window, int left, int top, int width, int height)
     {
         var hwnd = new IntPtr(window.Hwnd);
@@ -837,6 +888,23 @@ internal sealed class WordSession : IDisposable
         Close();
         GC.SuppressFinalize(this);
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(IntPtr hWnd, out NativeRect rect);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool BringWindowToTop(IntPtr hWnd);
 
     [DllImport("user32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
