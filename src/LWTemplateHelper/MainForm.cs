@@ -6,10 +6,10 @@ internal sealed class MainForm : Form
 {
     private readonly ComboBox _templateTypeCombo = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
     private readonly ComboBox _subtypeCombo = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 260 };
-    private readonly Button _newTypeButton = new() { Text = "New Type", AutoSize = true };
-    private readonly Button _editTypeButton = new() { Text = "Edit Type", AutoSize = true };
-    private readonly Button _newSubtypeButton = new() { Text = "New Subtype", AutoSize = true };
-    private readonly Button _editSubtypeButton = new() { Text = "Edit Subtype", AutoSize = true };
+    private readonly ThemedButton _newTypeButton = new() { Text = "New Type", AutoSize = true };
+    private readonly ThemedButton _editTypeButton = new() { Text = "Edit Type", AutoSize = true };
+    private readonly ThemedButton _newSubtypeButton = new() { Text = "New Subtype", AutoSize = true };
+    private readonly ThemedButton _editSubtypeButton = new() { Text = "Edit Subtype", AutoSize = true };
 
     private readonly DataGridView _bookmarkGrid = CreateBookmarkGrid();
     private readonly DataGridView _infoBookmarkGrid = CreateBookmarkGrid();
@@ -20,27 +20,27 @@ internal sealed class MainForm : Form
         Text = "Open working copies to compare bookmark status.",
         Anchor = AnchorStyles.Left
     };
-    private readonly Button _refreshStatusButton = new() { Text = "Refresh Status", AutoSize = true, Enabled = false };
-    private readonly Button _locateEnglishButton = new() { Text = "Locate English", AutoSize = true, Enabled = false };
-    private readonly Button _locateFrenchButton = new() { Text = "Locate French", AutoSize = true, Enabled = false };
-    private readonly Button _locateBothButton = new() { Text = "Locate Both", AutoSize = true, Enabled = false };
-    private readonly Button _addBookmarkButton = new() { Text = "Add Bookmark", AutoSize = true, Enabled = false };
-    private readonly Button _replaceRangeButton = new() { Text = "Replace Range", AutoSize = true, Enabled = false };
-    private readonly Button _renameBookmarkButton = new() { Text = "Rename", AutoSize = true, Enabled = false };
-    private readonly Button _deleteBookmarkButton = new() { Text = "Delete Bookmark", AutoSize = true, Enabled = false };
-    private readonly Button _addInfoButton = new() { Text = "Add INFO", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _refreshStatusButton = new() { Text = "Refresh Status", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _locateEnglishButton = new() { Text = "Locate English", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _locateFrenchButton = new() { Text = "Locate French", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _locateBothButton = new() { Text = "Locate Both", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _addBookmarkButton = new() { Text = "Add Bookmark", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _replaceRangeButton = new() { Text = "Replace Range", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _renameBookmarkButton = new() { Text = "Rename", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _deleteBookmarkButton = new() { Text = "Delete Bookmark", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _addInfoButton = new() { Text = "Add INFO", AutoSize = true, Enabled = false };
     private readonly Label _infoSummary = new() { AutoSize = true, Text = "INFO bookmarks: none", Anchor = AnchorStyles.Left };
 
     private readonly TextBox _englishPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
     private readonly TextBox _frenchPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
     private readonly Label _status = new() { AutoSize = true, Text = "Create or select a Template Type and subtype." };
-    private readonly Button _openButton = new() { Text = "Open Working Copies", AutoSize = true, Enabled = false };
-    private readonly Button _closeButton = new() { Text = "Close Word Session", AutoSize = true, Enabled = false };
-    private readonly Button _validateButton = new() { Text = "Validate", AutoSize = true, Enabled = false };
-    private readonly Button _finalizeButton = new() { Text = "Save / Finalize", AutoSize = true, Enabled = false };
-    private readonly Button _sideBySideButton = new() { Text = "Side by Side", AutoSize = true, Enabled = false };
-    private readonly Button _englishFocusButton = new() { Text = "English Focus", AutoSize = true, Enabled = false };
-    private readonly Button _frenchFocusButton = new() { Text = "French Focus", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _openButton = new() { Text = "Open Working Copies", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _closeButton = new() { Text = "Close Word Session", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _validateButton = new() { Text = "Validate", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _finalizeButton = new() { Text = "Save / Finalize", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _sideBySideButton = new() { Text = "Side by Side", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _englishFocusButton = new() { Text = "English Focus", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _frenchFocusButton = new() { Text = "French Focus", AutoSize = true, Enabled = false };
 
     private readonly Label _testModeLabel = new()
     {
@@ -49,12 +49,12 @@ internal sealed class MainForm : Form
         ForeColor = SystemColors.GrayText,
         Anchor = AnchorStyles.Left
     };
-    private readonly Button _startTestButton = new() { Text = "Start Test Mode", AutoSize = true, Enabled = false };
-    private readonly Button _resetTestButton = new() { Text = "Reset Test", AutoSize = true, Enabled = false };
-    private readonly Button _closeTestButton = new() { Text = "Close Test", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _startTestButton = new() { Text = "Start Test Mode", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _resetTestButton = new() { Text = "Reset Test", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _closeTestButton = new() { Text = "Close Test", AutoSize = true, Enabled = false };
     private readonly TextBox _testValueBox = new() { Text = "TEST VALUE", Width = 260, Enabled = false };
-    private readonly Button _testSetValueButton = new() { Text = "Set Value", AutoSize = true, Enabled = false };
-    private readonly Button _testDeleteContentButton = new() { Text = "Delete Content", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _testSetValueButton = new() { Text = "Set Value", AutoSize = true, Enabled = false };
+    private readonly ThemedButton _testDeleteContentButton = new() { Text = "Delete Content", AutoSize = true, Enabled = false };
 
     private readonly WordSession _wordSession = new();
     private readonly TemplateConfigStore _configStore = new();
