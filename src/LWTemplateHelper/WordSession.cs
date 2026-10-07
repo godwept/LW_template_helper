@@ -148,8 +148,8 @@ internal sealed class WordSession : IDisposable
                     $"Bookmark '{bookmarkName}' does not exist in either working copy. Use Add Bookmark instead.");
             }
 
-            englishRange = GetCapturedRangeDuplicate(ref _englishCapturedRange, "English");
-            frenchRange = GetCapturedRangeDuplicate(ref _frenchCapturedRange, "French");
+            englishRange = GetCurrentSelectionRangeDuplicate(_englishDocument!, "English");
+            frenchRange = GetCurrentSelectionRangeDuplicate(_frenchDocument!, "French");
 
             DeleteBookmarkMarkerIfExists(_englishDocument!, bookmarkName);
             DeleteBookmarkMarkerIfExists(_frenchDocument!, bookmarkName);
