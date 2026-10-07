@@ -63,6 +63,8 @@ internal sealed class TemplateTypeDialog : Form
         root.Controls.Add(buttons);
 
         Controls.Add(root);
+        AppTheme.Apply(this);
+        AppTheme.StylePrimaryButton(save);
         AcceptButton = save;
         CancelButton = cancel;
 
@@ -163,6 +165,8 @@ internal sealed class TemplateSubtypeDialog : Form
         root.Controls.Add(buttons);
 
         Controls.Add(root);
+        AppTheme.Apply(this);
+        AppTheme.StylePrimaryButton(save);
         AcceptButton = save;
         CancelButton = cancel;
 
