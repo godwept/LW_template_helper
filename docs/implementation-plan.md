@@ -203,7 +203,7 @@ Existing VBA semantics were reviewed before implementation: Set Value assigns bo
 
 ## Phase 8 — Validation + final save
 
-**Status:** Implemented / awaiting user manual test
+**Status:** Complete / user-tested
 
 **Goal:** safely turn working copies into finalized templates.
 
