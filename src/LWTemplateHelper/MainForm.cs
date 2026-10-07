@@ -26,11 +26,6 @@ internal sealed class MainForm : Form
     private readonly Button _renameBookmarkButton = new() { Text = "Rename", AutoSize = true, Enabled = false };
     private readonly Button _deleteBookmarkButton = new() { Text = "Delete Bookmark", AutoSize = true, Enabled = false };
 
-    private readonly Label _englishSelection = new() { AutoSize = true, Text = "Not captured", Anchor = AnchorStyles.Left };
-    private readonly Label _frenchSelection = new() { AutoSize = true, Text = "Not captured", Anchor = AnchorStyles.Left };
-    private readonly Button _captureEnglishButton = new() { Text = "Capture English", AutoSize = true, Enabled = false };
-    private readonly Button _captureFrenchButton = new() { Text = "Capture French", AutoSize = true, Enabled = false };
-
     private readonly TextBox _englishPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
     private readonly TextBox _frenchPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
     private readonly Label _status = new() { AutoSize = true, Text = "Create or select a Template Type and subtype." };
@@ -58,7 +53,7 @@ internal sealed class MainForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(12),
             ColumnCount = 1,
-            RowCount = 7
+            RowCount = 6
         };
 
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -67,11 +62,9 @@ internal sealed class MainForm : Form
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         root.Controls.Add(BuildConfigurationGroup());
         root.Controls.Add(BuildBookmarkGroup());
-        root.Controls.Add(BuildSelectionGroup());
         root.Controls.Add(BuildSourceGroup());
 
         var sessionButtons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
@@ -113,9 +106,6 @@ internal sealed class MainForm : Form
         _replaceRangeButton.Click += (_, _) => ReplaceSelectedBookmarkRange();
         _renameBookmarkButton.Click += (_, _) => RenameSelectedBookmark();
         _deleteBookmarkButton.Click += (_, _) => DeleteSelectedBookmark();
-        _captureEnglishButton.Click += (_, _) => CaptureSelection(english: true);
-        _captureFrenchButton.Click += (_, _) => CaptureSelection(english: false);
-
         _openButton.Click += (_, _) => OpenWorkingCopies();
         _closeButton.Click += (_, _) => CloseSession();
         _sideBySideButton.Click += (_, _) => RunWordAction(_wordSession.ArrangeSideBySide);
@@ -275,40 +265,6 @@ internal sealed class MainForm : Form
             Margin = new Padding(3, 8, 3, 3)
         });
         table.Controls.Add(_otherBookmarkGrid);
-
-        group.Controls.Add(table);
-        return group;
-    }
-
-    private Control BuildSelectionGroup()
-    {
-        var group = new GroupBox
-        {
-            Text = "Captured Word selections",
-            Dock = DockStyle.Top,
-            AutoSize = true,
-            Padding = new Padding(10)
-        };
-
-        var table = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            ColumnCount = 3,
-            RowCount = 2
-        };
-
-        table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70));
-        table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        table.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-
-        table.Controls.Add(new Label { Text = "English", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 0);
-        table.Controls.Add(_englishSelection, 1, 0);
-        table.Controls.Add(_captureEnglishButton, 2, 0);
-
-        table.Controls.Add(new Label { Text = "French", AutoSize = true, Anchor = AnchorStyles.Left }, 0, 1);
-        table.Controls.Add(_frenchSelection, 1, 1);
-        table.Controls.Add(_captureFrenchButton, 2, 1);
 
         group.Controls.Add(table);
         return group;
@@ -538,7 +494,7 @@ internal sealed class MainForm : Form
 
         RunBookmarkEdit(
             () => _wordSession.AddBookmark(_selectedBookmarkName),
-            $"Added bookmark '{_selectedBookmarkName}' to both working copies.");
+            $"Added bookmark '{_selectedBookmarkName}' using the current English/French Word selections.");
     }
 
     private void ReplaceSelectedBookmarkRange()
@@ -548,7 +504,7 @@ internal sealed class MainForm : Form
 
         RunBookmarkEdit(
             () => _wordSession.ReplaceBookmarkRange(_selectedBookmarkName),
-            $"Replaced range for bookmark '{_selectedBookmarkName}' in both working copies.");
+            $"Replaced range for bookmark '{_selectedBookmarkName}' using the current English/French Word selections.");
     }
 
     private void RenameSelectedBookmark()
@@ -604,41 +560,6 @@ internal sealed class MainForm : Form
         {
             MessageBox.Show(this, ex.Message, "Bookmark operation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
-    }
-
-    private void CaptureSelection(bool english)
-    {
-        try
-        {
-            var info = english
-                ? _wordSession.CaptureEnglishSelection()
-                : _wordSession.CaptureFrenchSelection();
-
-            SetSelectionLabel(english, info);
-            _status.Text = $"{(english ? "English" : "French")} selection captured.";
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(this, ex.Message, "Capture selection", MessageBoxButtons.OK, MessageBoxIcon.Information);
-        }
-    }
-
-    private void RefreshSelectionPreviews()
-    {
-        SetSelectionLabel(english: true, _wordSession.GetEnglishCapturedSelection());
-        SetSelectionLabel(english: false, _wordSession.GetFrenchCapturedSelection());
-    }
-
-    private void SetSelectionLabel(bool english, CapturedSelectionInfo? info)
-    {
-        var label = english ? _englishSelection : _frenchSelection;
-        label.Text = info is null ? "Not captured" : $"✓ \"{info.Preview}\"";
-    }
-
-    private void ResetSelectionPreviews()
-    {
-        _englishSelection.Text = "Not captured";
-        _frenchSelection.Text = "Not captured";
     }
 
     private void CreateTemplateType()
@@ -781,7 +702,6 @@ internal sealed class MainForm : Form
 
             _wordSession.Open(subtype.EnglishTemplatePath, subtype.FrenchTemplatePath);
             SetSessionControls(true);
-            ResetSelectionPreviews();
             RefreshBookmarkStatus();
 
             _status.Text =
@@ -868,7 +788,6 @@ internal sealed class MainForm : Form
             _bookmarkSummary.Text =
                 $"Configured: {both} both, {mismatch} mismatch, {neither} unused | Other: {otherNames.Count}";
 
-            RefreshSelectionPreviews();
             _status.Text = $"Bookmark status refreshed. EN: {english.Count}, FR: {french.Count}.";
         }
         catch (Exception ex)
@@ -911,7 +830,6 @@ internal sealed class MainForm : Form
             PopulateConfiguredBookmarkRows(SelectedType);
             _otherBookmarkGrid.Rows.Clear();
             ClearSelectedBookmark();
-            ResetSelectionPreviews();
         }
     }
 
@@ -939,8 +857,6 @@ internal sealed class MainForm : Form
         _openButton.Enabled = !open && SelectedSubtype is not null;
         _closeButton.Enabled = open;
         _refreshStatusButton.Enabled = open;
-        _captureEnglishButton.Enabled = open;
-        _captureFrenchButton.Enabled = open;
         _sideBySideButton.Enabled = open;
         _englishFocusButton.Enabled = open;
         _frenchFocusButton.Enabled = open;
