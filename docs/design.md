@@ -367,11 +367,13 @@ When Test Mode begins:
 2. create a second set of temporary copies:
    - `Test_E.docx`
    - `Test_F.docx`
-3. open/display the test copies through Word;
-4. automatically arrange the English and French test windows side by side using the same native 50/50 positioning approach as the normal Side by Side layout;
-5. perform all simulated Letter Wizard operations on those test documents.
+3. capture the current native screen bounds of the English and French working-copy windows;
+4. open/display the test copies through Word;
+5. position Test_E.docx directly over Working_E.docx and Test_F.docx directly over Working_F.docx using those captured bounds;
+6. bring the test windows forward;
+7. perform all simulated Letter Wizard operations on those test documents.
 
-Starting Test Mode may reposition the **test** windows, but must not reposition the existing working-copy windows.
+Starting Test Mode must not reposition the existing working-copy windows. Test-window placement follows the working windows rather than the bookmark-manager window, so multi-monitor/manual layouts are preserved.
 
 ### Required V1 test operations
 
