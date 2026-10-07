@@ -163,7 +163,7 @@ Manual verification should use a disposable copy of a real template and inspect 
 
 ## Phase 6 — INFO bookmarks
 
-**Status:** Implemented / awaiting user manual test
+**Status:** Complete / user-tested
 
 **Goal:** make repetitive informational bookmarks fast.
 
