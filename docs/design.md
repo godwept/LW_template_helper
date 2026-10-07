@@ -291,7 +291,9 @@ Support:
 
 - Locate English
 - Locate French
-- ideally Locate Both
+- Locate Both
+
+Locate commands must not reposition Word windows. Window placement changes are reserved for explicit layout commands such as **Side by Side**.
 
 ### Change range
 
