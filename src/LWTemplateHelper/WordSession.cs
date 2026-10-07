@@ -9,11 +9,16 @@ internal sealed class WordSession : IDisposable
     private Word.Application? _word;
     private Word.Document? _englishDocument;
     private Word.Document? _frenchDocument;
+    private Word.Document? _englishTestDocument;
+    private Word.Document? _frenchTestDocument;
 
     public bool IsOpen => _word is not null;
+    public bool IsTestMode => _englishTestDocument is not null && _frenchTestDocument is not null;
     public string? SessionDirectory { get; private set; }
     public string? EnglishWorkingPath { get; private set; }
     public string? FrenchWorkingPath { get; private set; }
+    public string? EnglishTestPath { get; private set; }
+    public string? FrenchTestPath { get; private set; }
 
     public void Open(string englishSource, string frenchSource)
     {
@@ -85,6 +90,98 @@ internal sealed class WordSession : IDisposable
         EnsureOpen();
         LocateBookmark(_englishDocument, bookmarkName, "English");
         LocateBookmark(_frenchDocument, bookmarkName, "French");
+    }
+
+    public void StartTestMode()
+    {
+        EnsureOpen();
+
+        if (IsTestMode)
+            throw new InvalidOperationException("Test Mode is already open.");
+
+        if (SessionDirectory is null || EnglishWorkingPath is null || FrenchWorkingPath is null)
+            throw new InvalidOperationException("The working-copy session paths are unavailable.");
+
+        _englishDocument!.Save();
+        _frenchDocument!.Save();
+
+        EnglishTestPath = Path.Combine(SessionDirectory, "Test_E.docx");
+        FrenchTestPath = Path.Combine(SessionDirectory, "Test_F.docx");
+
+        DeleteFileIfExists(EnglishTestPath);
+        DeleteFileIfExists(FrenchTestPath);
+
+        File.Copy(EnglishWorkingPath, EnglishTestPath, overwrite: true);
+        File.Copy(FrenchWorkingPath, FrenchTestPath, overwrite: true);
+
+        try
+        {
+            _englishTestDocument = _word!.Documents.Open(
+                FileName: EnglishTestPath,
+                ReadOnly: false,
+                AddToRecentFiles: false,
+                Visible: true);
+
+            _frenchTestDocument = _word.Documents.Open(
+                FileName: FrenchTestPath,
+                ReadOnly: false,
+                AddToRecentFiles: false,
+                Visible: true);
+        }
+        catch
+        {
+            CloseTestMode();
+            throw;
+        }
+    }
+
+    public void ResetTestMode()
+    {
+        EnsureOpen();
+
+        if (!IsTestMode)
+            throw new InvalidOperationException("Test Mode is not open.");
+
+        CloseTestMode();
+        StartTestMode();
+    }
+
+    public void CloseTestMode()
+    {
+        CloseDocument(ref _frenchTestDocument);
+        CloseDocument(ref _englishTestDocument);
+
+        DeleteFileIfExists(FrenchTestPath);
+        DeleteFileIfExists(EnglishTestPath);
+
+        FrenchTestPath = null;
+        EnglishTestPath = null;
+    }
+
+    public (bool English, bool French) TestSetValue(string bookmarkName, string value)
+    {
+        EnsureTestMode();
+
+        bool english = SetBookmarkValueIfExists(_englishTestDocument!, bookmarkName, value);
+        bool french = SetBookmarkValueIfExists(_frenchTestDocument!, bookmarkName, value);
+
+        if (!english && !french)
+            throw new InvalidOperationException($"Bookmark '{bookmarkName}' does not exist in either test document.");
+
+        return (english, french);
+    }
+
+    public (bool English, bool French) TestDeleteContent(string bookmarkName)
+    {
+        EnsureTestMode();
+
+        bool english = DeleteBookmarkContentIfExists(_englishTestDocument!, bookmarkName);
+        bool french = DeleteBookmarkContentIfExists(_frenchTestDocument!, bookmarkName);
+
+        if (!english && !french)
+            throw new InvalidOperationException($"Bookmark '{bookmarkName}' does not exist in either test document.");
+
+        return (english, french);
     }
 
     public string AddNextInfoBookmark()
@@ -332,6 +429,86 @@ internal sealed class WordSession : IDisposable
     public void FocusEnglish() => Focus(_englishDocument);
 
     public void FocusFrench() => Focus(_frenchDocument);
+
+    private static bool SetBookmarkValueIfExists(
+        Word.Document document,
+        string bookmarkName,
+        string value)
+    {
+        Word.Bookmark? bookmark = null;
+        Word.Range? range = null;
+
+        try
+        {
+            bookmark = FindBookmark(document, bookmarkName);
+
+            if (bookmark is null)
+                return false;
+
+            range = bookmark.Range;
+
+            // Mirrors the current Letter Wizard VBA helper:
+            // assigning Range.Text replaces the content and consumes the bookmark.
+            range.Text = value;
+            return true;
+        }
+        finally
+        {
+            ReleaseCom(range);
+            ReleaseCom(bookmark);
+        }
+    }
+
+    private static bool DeleteBookmarkContentIfExists(
+        Word.Document document,
+        string bookmarkName)
+    {
+        Word.Bookmark? bookmark = null;
+        Word.Range? range = null;
+
+        try
+        {
+            bookmark = FindBookmark(document, bookmarkName);
+
+            if (bookmark is null)
+                return false;
+
+            range = bookmark.Range;
+            range.Delete();
+            return true;
+        }
+        finally
+        {
+            ReleaseCom(range);
+            ReleaseCom(bookmark);
+        }
+    }
+
+    private void EnsureTestMode()
+    {
+        if (!IsTestMode || _englishTestDocument is null || _frenchTestDocument is null)
+            throw new InvalidOperationException("Start Test Mode first.");
+    }
+
+    private static void DeleteFileIfExists(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return;
+
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+            // A stale test file is disposable. If it is still locked, the
+            // subsequent copy/open operation will surface a useful error.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Same principle as above; let the next operation report the failure.
+        }
+    }
 
     internal static bool TryGetInfoNumber(string bookmarkName, out int number)
     {
@@ -594,6 +771,7 @@ internal sealed class WordSession : IDisposable
 
     public void Close()
     {
+        CloseTestMode();
         CloseDocument(ref _frenchDocument);
         CloseDocument(ref _englishDocument);
 
