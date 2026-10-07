@@ -38,6 +38,20 @@ internal sealed class MainForm : Form
     private readonly Button _englishFocusButton = new() { Text = "English Focus", AutoSize = true, Enabled = false };
     private readonly Button _frenchFocusButton = new() { Text = "French Focus", AutoSize = true, Enabled = false };
 
+    private readonly Label _testModeLabel = new()
+    {
+        AutoSize = true,
+        Text = "Test Mode inactive",
+        ForeColor = SystemColors.GrayText,
+        Anchor = AnchorStyles.Left
+    };
+    private readonly Button _startTestButton = new() { Text = "Start Test Mode", AutoSize = true, Enabled = false };
+    private readonly Button _resetTestButton = new() { Text = "Reset Test", AutoSize = true, Enabled = false };
+    private readonly Button _closeTestButton = new() { Text = "Close Test", AutoSize = true, Enabled = false };
+    private readonly TextBox _testValueBox = new() { Text = "TEST VALUE", Width = 260, Enabled = false };
+    private readonly Button _testSetValueButton = new() { Text = "Set Value", AutoSize = true, Enabled = false };
+    private readonly Button _testDeleteContentButton = new() { Text = "Delete Content", AutoSize = true, Enabled = false };
+
     private readonly WordSession _wordSession = new();
     private readonly TemplateConfigStore _configStore = new();
     private List<TemplateTypeConfig> _templateTypes = [];
@@ -49,15 +63,15 @@ internal sealed class MainForm : Form
     {
         Text = "Letter Wizard Template Bookmark Manager";
         StartPosition = FormStartPosition.CenterScreen;
-        MinimumSize = new Size(900, 720);
-        Size = new Size(1040, 820);
+        MinimumSize = new Size(900, 790);
+        Size = new Size(1040, 900);
 
         var root = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(12),
             ColumnCount = 1,
-            RowCount = 6
+            RowCount = 7
         };
 
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -66,9 +80,11 @@ internal sealed class MainForm : Form
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         root.Controls.Add(BuildConfigurationGroup());
         root.Controls.Add(BuildBookmarkGroup());
+        root.Controls.Add(BuildTestModeGroup());
         root.Controls.Add(BuildSourceGroup());
 
         var sessionButtons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true };
@@ -113,6 +129,11 @@ internal sealed class MainForm : Form
         _renameBookmarkButton.Click += (_, _) => RenameSelectedBookmark();
         _deleteBookmarkButton.Click += (_, _) => DeleteSelectedBookmark();
         _addInfoButton.Click += (_, _) => AddInfoBookmark();
+        _startTestButton.Click += (_, _) => StartTestMode();
+        _resetTestButton.Click += (_, _) => ResetTestMode();
+        _closeTestButton.Click += (_, _) => CloseTestMode();
+        _testSetValueButton.Click += (_, _) => TestSetValue();
+        _testDeleteContentButton.Click += (_, _) => TestDeleteContent();
         _openButton.Click += (_, _) => OpenWorkingCopies();
         _closeButton.Click += (_, _) => CloseSession();
         _sideBySideButton.Click += (_, _) => RunWordAction(_wordSession.ArrangeSideBySide);
@@ -292,6 +313,56 @@ internal sealed class MainForm : Form
         table.Controls.Add(_otherBookmarkGrid);
 
         group.Controls.Add(table);
+        return group;
+    }
+
+    private Control BuildTestModeGroup()
+    {
+        var group = new GroupBox
+        {
+            Text = "Test Mode",
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            Padding = new Padding(10)
+        };
+
+        var table = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            ColumnCount = 1,
+            RowCount = 2
+        };
+
+        var modeRow = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = false
+        };
+        modeRow.Controls.AddRange([_startTestButton, _resetTestButton, _closeTestButton, _testModeLabel]);
+
+        var operationRow = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = false
+        };
+        operationRow.Controls.Add(new Label
+        {
+            Text = "Test value",
+            AutoSize = true,
+            Anchor = AnchorStyles.Left,
+            Margin = new Padding(3, 8, 3, 3)
+        });
+        operationRow.Controls.Add(_testValueBox);
+        operationRow.Controls.Add(_testSetValueButton);
+        operationRow.Controls.Add(_testDeleteContentButton);
+
+        table.Controls.Add(modeRow);
+        table.Controls.Add(operationRow);
+        group.Controls.Add(table);
+
         return group;
     }
 
@@ -494,16 +565,20 @@ internal sealed class MainForm : Form
 
     private void UpdateBookmarkActionButtons()
     {
-        bool enabled = _wordSession.IsOpen && !string.IsNullOrWhiteSpace(_selectedBookmarkName);
+        bool selected = _wordSession.IsOpen && !string.IsNullOrWhiteSpace(_selectedBookmarkName);
+        bool editingEnabled = selected && !_wordSession.IsTestMode;
 
-        _locateEnglishButton.Enabled = enabled;
-        _locateFrenchButton.Enabled = enabled;
-        _locateBothButton.Enabled = enabled;
+        _locateEnglishButton.Enabled = editingEnabled;
+        _locateFrenchButton.Enabled = editingEnabled;
+        _locateBothButton.Enabled = editingEnabled;
 
-        _addBookmarkButton.Enabled = enabled && _selectedBookmarkIsConfigured;
-        _replaceRangeButton.Enabled = enabled;
-        _renameBookmarkButton.Enabled = enabled && !_selectedBookmarkIsInfo;
-        _deleteBookmarkButton.Enabled = enabled;
+        _addBookmarkButton.Enabled = editingEnabled && _selectedBookmarkIsConfigured;
+        _replaceRangeButton.Enabled = editingEnabled;
+        _renameBookmarkButton.Enabled = editingEnabled && !_selectedBookmarkIsInfo;
+        _deleteBookmarkButton.Enabled = editingEnabled;
+
+        _testSetValueButton.Enabled = _wordSession.IsTestMode && selected && !_selectedBookmarkIsInfo;
+        _testDeleteContentButton.Enabled = _wordSession.IsTestMode && selected;
     }
 
     private void LocateSelectedBookmark(Action<string> locateAction)
@@ -612,6 +687,128 @@ internal sealed class MainForm : Form
         {
             MessageBox.Show(this, ex.Message, "Bookmark operation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
+    }
+
+    private void StartTestMode()
+    {
+        try
+        {
+            UseWaitCursor = true;
+            _wordSession.StartTestMode();
+            UpdateTestModeUi();
+            _status.Text = "Test Mode started from the current saved working-copy state.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Test Mode", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+        }
+    }
+
+    private void ResetTestMode()
+    {
+        try
+        {
+            UseWaitCursor = true;
+            _wordSession.ResetTestMode();
+            UpdateTestModeUi();
+            _status.Text = "Test copies reset from the current working copies.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Reset Test", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+        }
+    }
+
+    private void CloseTestMode()
+    {
+        try
+        {
+            _wordSession.CloseTestMode();
+            UpdateTestModeUi();
+            _status.Text = "Test Mode closed. Working copies were not changed by test operations.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Close Test", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    private void TestSetValue()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedBookmarkName))
+            return;
+
+        try
+        {
+            var result = _wordSession.TestSetValue(_selectedBookmarkName, _testValueBox.Text);
+            _status.Text =
+                $"Test Set Value applied to '{_selectedBookmarkName}' ({FormatTestSides(result.English, result.French)}).";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Test Set Value", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    private void TestDeleteContent()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedBookmarkName))
+            return;
+
+        try
+        {
+            var result = _wordSession.TestDeleteContent(_selectedBookmarkName);
+            _status.Text =
+                $"Test Delete Content applied to '{_selectedBookmarkName}' ({FormatTestSides(result.English, result.French)}).";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Test Delete Content", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    private static string FormatTestSides(bool english, bool french)
+    {
+        if (english && french)
+            return "EN + FR";
+
+        if (english)
+            return "EN only";
+
+        return "FR only";
+    }
+
+    private void UpdateTestModeUi()
+    {
+        bool open = _wordSession.IsOpen;
+        bool test = _wordSession.IsTestMode;
+
+        _startTestButton.Enabled = open && !test;
+        _resetTestButton.Enabled = test;
+        _closeTestButton.Enabled = test;
+        _testValueBox.Enabled = test;
+
+        _testModeLabel.Text = test
+            ? "TEST MODE ACTIVE — edits apply only to Test_E.docx / Test_F.docx"
+            : "Test Mode inactive";
+
+        _testModeLabel.ForeColor = test ? Color.DarkRed : SystemColors.GrayText;
+
+        _refreshStatusButton.Enabled = open && !test;
+        _addInfoButton.Enabled = open && !test;
+        _sideBySideButton.Enabled = open && !test;
+        _englishFocusButton.Enabled = open && !test;
+        _frenchFocusButton.Enabled = open && !test;
+
+        UpdateBookmarkActionButtons();
     }
 
     private void CreateTemplateType()
@@ -754,6 +951,7 @@ internal sealed class MainForm : Form
 
             _wordSession.Open(subtype.EnglishTemplatePath, subtype.FrenchTemplatePath);
             SetSessionControls(true);
+            UpdateTestModeUi();
             RefreshBookmarkStatus();
 
             _status.Text =
@@ -932,6 +1130,7 @@ internal sealed class MainForm : Form
         finally
         {
             SetSessionControls(false);
+            UpdateTestModeUi();
             PopulateConfiguredBookmarkRows(SelectedType);
             _infoBookmarkGrid.Rows.Clear();
             _infoSummary.Text = "INFO bookmarks: none";
@@ -963,11 +1162,17 @@ internal sealed class MainForm : Form
 
         _openButton.Enabled = !open && SelectedSubtype is not null;
         _closeButton.Enabled = open;
-        _refreshStatusButton.Enabled = open;
-        _addInfoButton.Enabled = open;
-        _sideBySideButton.Enabled = open;
-        _englishFocusButton.Enabled = open;
-        _frenchFocusButton.Enabled = open;
+
+        _startTestButton.Enabled = open && !_wordSession.IsTestMode;
+        _resetTestButton.Enabled = _wordSession.IsTestMode;
+        _closeTestButton.Enabled = _wordSession.IsTestMode;
+        _testValueBox.Enabled = _wordSession.IsTestMode;
+
+        _refreshStatusButton.Enabled = open && !_wordSession.IsTestMode;
+        _addInfoButton.Enabled = open && !_wordSession.IsTestMode;
+        _sideBySideButton.Enabled = open && !_wordSession.IsTestMode;
+        _englishFocusButton.Enabled = open && !_wordSession.IsTestMode;
+        _frenchFocusButton.Enabled = open && !_wordSession.IsTestMode;
 
         UpdateBookmarkActionButtons();
     }
