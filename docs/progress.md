@@ -10,7 +10,7 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 3 implemented; awaiting user manual testing.
+**Stage:** Phase 3 complete and user-tested; ready for Phase 4.
 
 Phases 1 and 2 are complete and user-tested. Phase 3 now reads bookmark names from the open English/French working documents and compares them with the selected Template Type configuration.
 
@@ -116,7 +116,13 @@ Confirmed working by the user:
 
 ### Phase 3
 
-Not yet manually tested.
+Confirmed working by the user:
+
+- configured bookmark EN/FR status matches the open working documents;
+- mismatch highlighting works;
+- Other Bookmarks display works;
+- Refresh Status updates after manual bookmark changes in a working copy;
+- existing Phase 1 Word/session behavior remains intact.
 
 ---
 
@@ -162,9 +168,7 @@ Phase 3 must remain read-only. Locate, selection capture, add, rename, replace-r
 
 ## Exact Next Step
 
-**User manually tests Phase 3.**
-
-If Phase 3 passes, implement **Phase 4 — Locate + selection capture**:
+**Implement Phase 4 — Locate + selection capture**:
 
 - Locate English;
 - Locate French;
