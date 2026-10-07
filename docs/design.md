@@ -1,6 +1,6 @@
 # Letter Wizard Template Bookmark Manager — Design
 
-Status: **Accepted architecture; implementation in progress (Phases 1-4 implemented)**
+Status: **Accepted architecture; implementation in progress (Phases 1-5 implemented)**
 
 ## 1. Purpose
 
@@ -287,7 +287,9 @@ Required operations:
 
 ### Add
 
-Create the selected bookmark around the stored English and French ranges.
+Create the selected configured bookmark around the stored English and French ranges.
+
+Add must not silently overwrite an existing bookmark. If the name already exists in either working copy, the user should use Replace Range instead.
 
 ### Locate
 
@@ -305,15 +307,19 @@ User selects replacement English/French ranges and chooses Replace Range.
 
 The existing bookmark markers are replaced with bookmarks around the new ranges without changing the selected document text.
 
+Replace Range may also repair an EN/FR mismatch by recreating the selected bookmark on both captured ranges.
+
 ### Rename
 
 Where appropriate, preserve the bookmarked ranges while recreating them under a new valid bookmark name.
 
 Rename behavior must guard against duplicate bookmark names.
 
+Renaming a bookmark in the working documents does not automatically rename the shared Template Type configuration. Template Type definitions are shared across subtypes and must be edited explicitly when the configured name itself should change.
+
 ### Delete bookmark
 
-Support removal of bookmark markers.
+Support removal of bookmark markers only. The bookmarked text must remain untouched.
 
 The UI should distinguish this editing operation from the Letter Wizard **test delete** behavior that removes bookmarked content.
 

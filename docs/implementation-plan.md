@@ -146,6 +146,8 @@ Reliability beats cleverness.
 
 ## Phase 5 — Bookmark creation/editing
 
+**Status:** Implemented / awaiting user manual test
+
 **Goal:** deliver the core bookmark-authoring workflow.
 
 Build:
