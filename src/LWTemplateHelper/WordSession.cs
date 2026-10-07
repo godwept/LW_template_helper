@@ -88,6 +88,29 @@ internal sealed class WordSession : IDisposable
         ArrangeSideBySide();
     }
 
+    public string AddNextInfoBookmark()
+    {
+        EnsureOpen();
+
+        var english = ReadBookmarkNames(_englishDocument!);
+        var french = ReadBookmarkNames(_frenchDocument!);
+
+        int highest = 0;
+
+        foreach (string name in english.Concat(french))
+        {
+            if (TryGetInfoNumber(name, out int number) && number > highest)
+                highest = number;
+        }
+
+        if (highest == int.MaxValue)
+            throw new InvalidOperationException("Cannot create another INFO bookmark because the INFO number is too large.");
+
+        string bookmarkName = $"INFO_{highest + 1}";
+        AddBookmark(bookmarkName);
+        return bookmarkName;
+    }
+
     public void AddBookmark(string bookmarkName)
     {
         EnsureOpen();
@@ -310,6 +333,16 @@ internal sealed class WordSession : IDisposable
     public void FocusEnglish() => Focus(_englishDocument);
 
     public void FocusFrench() => Focus(_frenchDocument);
+
+    internal static bool TryGetInfoNumber(string bookmarkName, out int number)
+    {
+        number = 0;
+
+        if (!bookmarkName.StartsWith("INFO_", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return int.TryParse(bookmarkName.AsSpan(5), out number) && number >= 1;
+    }
 
     private static void ValidateBookmarkName(string bookmarkName)
     {
