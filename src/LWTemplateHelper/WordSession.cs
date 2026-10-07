@@ -104,6 +104,196 @@ internal sealed class WordSession : IDisposable
     public CapturedSelectionInfo? GetFrenchCapturedSelection() =>
         ReadCapturedSelection(ref _frenchCapturedRange);
 
+    public void AddBookmark(string bookmarkName)
+    {
+        EnsureOpen();
+        ValidateBookmarkName(bookmarkName);
+
+        Word.Range? englishRange = null;
+        Word.Range? frenchRange = null;
+
+        try
+        {
+            if (BookmarkExists(_englishDocument!, bookmarkName) ||
+                BookmarkExists(_frenchDocument!, bookmarkName))
+            {
+                throw new InvalidOperationException(
+                    $"Bookmark '{bookmarkName}' already exists in at least one working copy. Use Replace Range if you intend to move or repair it.");
+            }
+
+            englishRange = GetCapturedRangeDuplicate(ref _englishCapturedRange, "English");
+            frenchRange = GetCapturedRangeDuplicate(ref _frenchCapturedRange, "French");
+
+            AddBookmarkMarker(_englishDocument!, bookmarkName, englishRange);
+
+            try
+            {
+                AddBookmarkMarker(_frenchDocument!, bookmarkName, frenchRange);
+            }
+            catch
+            {
+                DeleteBookmarkMarkerIfExists(_englishDocument!, bookmarkName);
+                throw;
+            }
+        }
+        finally
+        {
+            ReleaseCom(englishRange);
+            ReleaseCom(frenchRange);
+        }
+    }
+
+    public void ReplaceBookmarkRange(string bookmarkName)
+    {
+        EnsureOpen();
+        ValidateBookmarkName(bookmarkName);
+
+        Word.Range? englishRange = null;
+        Word.Range? frenchRange = null;
+        Word.Range? oldEnglishRange = null;
+        Word.Range? oldFrenchRange = null;
+
+        try
+        {
+            oldEnglishRange = GetBookmarkRangeDuplicate(_englishDocument!, bookmarkName);
+            oldFrenchRange = GetBookmarkRangeDuplicate(_frenchDocument!, bookmarkName);
+
+            if (oldEnglishRange is null && oldFrenchRange is null)
+            {
+                throw new InvalidOperationException(
+                    $"Bookmark '{bookmarkName}' does not exist in either working copy. Use Add Bookmark instead.");
+            }
+
+            englishRange = GetCapturedRangeDuplicate(ref _englishCapturedRange, "English");
+            frenchRange = GetCapturedRangeDuplicate(ref _frenchCapturedRange, "French");
+
+            DeleteBookmarkMarkerIfExists(_englishDocument!, bookmarkName);
+            DeleteBookmarkMarkerIfExists(_frenchDocument!, bookmarkName);
+
+            try
+            {
+                AddBookmarkMarker(_englishDocument!, bookmarkName, englishRange);
+                AddBookmarkMarker(_frenchDocument!, bookmarkName, frenchRange);
+            }
+            catch
+            {
+                DeleteBookmarkMarkerIfExists(_englishDocument!, bookmarkName);
+                DeleteBookmarkMarkerIfExists(_frenchDocument!, bookmarkName);
+
+                if (oldEnglishRange is not null)
+                    AddBookmarkMarker(_englishDocument!, bookmarkName, oldEnglishRange);
+
+                if (oldFrenchRange is not null)
+                    AddBookmarkMarker(_frenchDocument!, bookmarkName, oldFrenchRange);
+
+                throw;
+            }
+        }
+        finally
+        {
+            ReleaseCom(englishRange);
+            ReleaseCom(frenchRange);
+            ReleaseCom(oldEnglishRange);
+            ReleaseCom(oldFrenchRange);
+        }
+    }
+
+    public void RenameBookmark(string oldName, string newName)
+    {
+        EnsureOpen();
+        ValidateBookmarkName(newName);
+
+        if (string.Equals(oldName, newName, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Enter a different bookmark name.");
+
+        Word.Range? oldEnglishRange = null;
+        Word.Range? oldFrenchRange = null;
+
+        try
+        {
+            oldEnglishRange = GetBookmarkRangeDuplicate(_englishDocument!, oldName);
+            oldFrenchRange = GetBookmarkRangeDuplicate(_frenchDocument!, oldName);
+
+            if (oldEnglishRange is null && oldFrenchRange is null)
+                throw new InvalidOperationException($"Bookmark '{oldName}' does not exist in either working copy.");
+
+            if (BookmarkExists(_englishDocument!, newName) ||
+                BookmarkExists(_frenchDocument!, newName))
+            {
+                throw new InvalidOperationException(
+                    $"Bookmark '{newName}' already exists in at least one working copy.");
+            }
+
+            DeleteBookmarkMarkerIfExists(_englishDocument!, oldName);
+            DeleteBookmarkMarkerIfExists(_frenchDocument!, oldName);
+
+            try
+            {
+                if (oldEnglishRange is not null)
+                    AddBookmarkMarker(_englishDocument!, newName, oldEnglishRange);
+
+                if (oldFrenchRange is not null)
+                    AddBookmarkMarker(_frenchDocument!, newName, oldFrenchRange);
+            }
+            catch
+            {
+                DeleteBookmarkMarkerIfExists(_englishDocument!, newName);
+                DeleteBookmarkMarkerIfExists(_frenchDocument!, newName);
+
+                if (oldEnglishRange is not null)
+                    AddBookmarkMarker(_englishDocument!, oldName, oldEnglishRange);
+
+                if (oldFrenchRange is not null)
+                    AddBookmarkMarker(_frenchDocument!, oldName, oldFrenchRange);
+
+                throw;
+            }
+        }
+        finally
+        {
+            ReleaseCom(oldEnglishRange);
+            ReleaseCom(oldFrenchRange);
+        }
+    }
+
+    public void DeleteBookmarkMarkers(string bookmarkName)
+    {
+        EnsureOpen();
+
+        Word.Range? oldEnglishRange = null;
+        Word.Range? oldFrenchRange = null;
+
+        try
+        {
+            oldEnglishRange = GetBookmarkRangeDuplicate(_englishDocument!, bookmarkName);
+            oldFrenchRange = GetBookmarkRangeDuplicate(_frenchDocument!, bookmarkName);
+
+            if (oldEnglishRange is null && oldFrenchRange is null)
+                throw new InvalidOperationException($"Bookmark '{bookmarkName}' does not exist in either working copy.");
+
+            try
+            {
+                DeleteBookmarkMarkerIfExists(_englishDocument!, bookmarkName);
+                DeleteBookmarkMarkerIfExists(_frenchDocument!, bookmarkName);
+            }
+            catch
+            {
+                if (oldEnglishRange is not null && !BookmarkExists(_englishDocument!, bookmarkName))
+                    AddBookmarkMarker(_englishDocument!, bookmarkName, oldEnglishRange);
+
+                if (oldFrenchRange is not null && !BookmarkExists(_frenchDocument!, bookmarkName))
+                    AddBookmarkMarker(_frenchDocument!, bookmarkName, oldFrenchRange);
+
+                throw;
+            }
+        }
+        finally
+        {
+            ReleaseCom(oldEnglishRange);
+            ReleaseCom(oldFrenchRange);
+        }
+    }
+
     public void ArrangeSideBySide()
     {
         EnsureOpen();
@@ -136,6 +326,110 @@ internal sealed class WordSession : IDisposable
     public void FocusEnglish() => Focus(_englishDocument);
 
     public void FocusFrench() => Focus(_frenchDocument);
+
+    private static void ValidateBookmarkName(string bookmarkName)
+    {
+        if (!ConfigurationValidation.TryValidateBookmarkName(bookmarkName, out string error))
+            throw new ArgumentException(error, nameof(bookmarkName));
+    }
+
+    private static Word.Range GetCapturedRangeDuplicate(
+        ref Word.Range? storedRange,
+        string language)
+    {
+        if (ReadCapturedSelection(ref storedRange) is null || storedRange is null)
+        {
+            throw new InvalidOperationException(
+                $"Capture a valid {language} selection before performing this bookmark operation.");
+        }
+
+        try
+        {
+            return storedRange.Duplicate;
+        }
+        catch (COMException)
+        {
+            ReleaseCom(storedRange);
+            storedRange = null;
+            throw new InvalidOperationException(
+                $"The captured {language} selection is no longer valid. Capture it again.");
+        }
+    }
+
+    private static bool BookmarkExists(Word.Document document, string bookmarkName)
+    {
+        Word.Bookmark? bookmark = null;
+
+        try
+        {
+            bookmark = FindBookmark(document, bookmarkName);
+            return bookmark is not null;
+        }
+        finally
+        {
+            ReleaseCom(bookmark);
+        }
+    }
+
+    private static Word.Range? GetBookmarkRangeDuplicate(Word.Document document, string bookmarkName)
+    {
+        Word.Bookmark? bookmark = null;
+        Word.Range? range = null;
+
+        try
+        {
+            bookmark = FindBookmark(document, bookmarkName);
+
+            if (bookmark is null)
+                return null;
+
+            range = bookmark.Range;
+            return range.Duplicate;
+        }
+        finally
+        {
+            ReleaseCom(range);
+            ReleaseCom(bookmark);
+        }
+    }
+
+    private static void AddBookmarkMarker(Word.Document document, string bookmarkName, Word.Range range)
+    {
+        Word.Bookmarks? bookmarks = null;
+        Word.Bookmark? addedBookmark = null;
+
+        try
+        {
+            bookmarks = document.Bookmarks;
+            object rangeObject = range;
+            addedBookmark = bookmarks.Add(bookmarkName, ref rangeObject);
+        }
+        finally
+        {
+            ReleaseCom(addedBookmark);
+            ReleaseCom(bookmarks);
+        }
+    }
+
+    private static bool DeleteBookmarkMarkerIfExists(Word.Document document, string bookmarkName)
+    {
+        Word.Bookmark? bookmark = null;
+
+        try
+        {
+            bookmark = FindBookmark(document, bookmarkName);
+
+            if (bookmark is null)
+                return false;
+
+            bookmark.Delete();
+            return true;
+        }
+        finally
+        {
+            ReleaseCom(bookmark);
+        }
+    }
 
     private static HashSet<string> ReadBookmarkNames(Word.Document document)
     {
