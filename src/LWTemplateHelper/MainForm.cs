@@ -85,7 +85,7 @@ internal sealed class MainForm : Form
             RowCount = 5
         };
 
-        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 155));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -204,9 +204,8 @@ internal sealed class MainForm : Form
         var group = new GroupBox
         {
             Text = "Template configuration",
-            Dock = DockStyle.Top,
-            AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Dock = DockStyle.Fill,
+            AutoSize = false,
             Padding = new Padding(12)
         };
 
@@ -288,67 +287,6 @@ internal sealed class MainForm : Form
             Padding = new Padding(12)
         };
 
-        var outer = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            ColumnCount = 1,
-            RowCount = 3
-        };
-
-        outer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        outer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        outer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-
-        var statusRow = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            ColumnCount = 2,
-            RowCount = 1
-        };
-        statusRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        statusRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        statusRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        _bookmarkSummary.Anchor = AnchorStyles.Left;
-        _refreshStatusButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        statusRow.Controls.Add(_bookmarkSummary, 0, 0);
-        statusRow.Controls.Add(_refreshStatusButton, 1, 0);
-
-        var actionRow = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            ColumnCount = 2,
-            RowCount = 1,
-            Margin = new Padding(0, 4, 0, 8)
-        };
-        actionRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-
-        var editToolbar = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            WrapContents = true,
-            Margin = new Padding(0)
-        };
-        editToolbar.Controls.AddRange(
-            [_addBookmarkButton, _addInfoButton, _replaceRangeButton, _renameBookmarkButton, _deleteBookmarkButton]);
-
-        var locateToolbar = new FlowLayoutPanel
-        {
-            AutoSize = true,
-            WrapContents = false,
-            FlowDirection = FlowDirection.LeftToRight,
-            Anchor = AnchorStyles.Top | AnchorStyles.Right,
-            Margin = new Padding(12, 0, 0, 0)
-        };
-        locateToolbar.Controls.AddRange([_locateEnglishButton, _locateFrenchButton, _locateBothButton]);
-
-        actionRow.Controls.Add(editToolbar, 0, 0);
-        actionRow.Controls.Add(locateToolbar, 1, 0);
-
         var grids = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -377,11 +315,57 @@ internal sealed class MainForm : Form
             "Bookmarks not defined by this Template Type",
             _otherBookmarkGrid), 2, 0);
 
-        outer.Controls.Add(statusRow);
-        outer.Controls.Add(actionRow);
-        outer.Controls.Add(grids);
+        var statusPanel = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 36,
+            Padding = new Padding(0, 0, 0, 4)
+        };
 
-        group.Controls.Add(outer);
+        _bookmarkSummary.Dock = DockStyle.Fill;
+        _bookmarkSummary.TextAlign = ContentAlignment.MiddleLeft;
+        _refreshStatusButton.Dock = DockStyle.Right;
+
+        statusPanel.Controls.Add(_bookmarkSummary);
+        statusPanel.Controls.Add(_refreshStatusButton);
+
+        var actionPanel = new Panel
+        {
+            Dock = DockStyle.Top,
+            Height = 42,
+            Padding = new Padding(0, 2, 0, 6)
+        };
+
+        var editToolbar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = false,
+            WrapContents = false,
+            Margin = new Padding(0)
+        };
+        editToolbar.Controls.AddRange(
+            [_addBookmarkButton, _addInfoButton, _replaceRangeButton, _renameBookmarkButton, _deleteBookmarkButton]);
+
+        var locateToolbar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Right,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            WrapContents = false,
+            FlowDirection = FlowDirection.LeftToRight,
+            Margin = new Padding(12, 0, 0, 0)
+        };
+        locateToolbar.Controls.AddRange([_locateEnglishButton, _locateFrenchButton, _locateBothButton]);
+
+        actionPanel.Controls.Add(editToolbar);
+        actionPanel.Controls.Add(locateToolbar);
+
+        // Add Fill first, then top-docked rows. This keeps the grids directly
+        // under the toolbars with no TableLayoutPanel sizing surprises.
+        group.Controls.Add(grids);
+        group.Controls.Add(actionPanel);
+        group.Controls.Add(statusPanel);
+
         return group;
     }
 
