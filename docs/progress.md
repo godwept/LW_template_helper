@@ -344,7 +344,13 @@ Latest visual refinements:
 - Refresh Status is now a compact refresh icon at the top-right of the Bookmark workspace;
 - bookmark editing actions start the action row at the left, with Locate English/French/Both aligned at the far right;
 - Test value label/textbox/Set Value/Delete Content are vertically middle-aligned;
-- bottom session status is now a plain muted label rather than a titled GroupBox.
+- bottom session status is now a plain muted label rather than a titled GroupBox;
+- fixed excess vertical gaps introduced by implicit TableLayoutPanel row sizing in Template Configuration and Bookmark workspace.
+
+Latest layout fix commits:
+
+- explicit row sizing: `c61f4d97abf0bd7a3deae6fef7021e3c71193bd9`
+- bookmark action-row sizing cleanup: `9b2fc1e86eec806c386cd9f57f2b6e1a261199b4`
 
 ---
 
