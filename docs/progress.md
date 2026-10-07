@@ -10,9 +10,9 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 8 complete and user-tested; ready for Phase 9.
+**Stage:** Phase 9 usability redesign implemented; awaiting user visual/manual testing.
 
-Phases 1-8 are complete and user-tested. All major V1 functionality is working. The remaining planned work is a small Phase 9 usability/cleanup pass.
+Phases 1-8 are complete and user-tested. Phase 9 now applies the requested layout and visual cleanup without changing bookmark/document behavior.
 
 ---
 
@@ -278,6 +278,55 @@ Phase 8 commits:
 
 ---
 
+### Phase 9 — Usability / visual pass
+
+Implemented on 2026-10-07.
+
+Requested workflow/layout changes:
+
+- moved **Open Working Copies**, **Close Word Session**, **Validate**, and **Save / Finalize** into the Template Configuration section;
+- moved **Side by Side**, **English Focus**, and **French Focus** into the same top configuration area;
+- removed the old separate session/layout button rows from the bottom of the form;
+- reorganized the bookmark workspace so all three grids are visible side by side:
+  - Configured bookmarks
+  - INFO bookmarks
+  - Other Bookmarks
+- widened the default form to better suit the three-column workspace while keeping the window resizable.
+
+Visual language:
+
+- added shared dark navy/slate theme inspired by the user's existing Pay Centre Automation tool;
+- teal outline/accent buttons;
+- teal-filled primary actions;
+- red destructive/session-discard actions;
+- dark data grids with blue headers;
+- dark green/red/gray/amber bookmark status rows instead of the previous light pastel colors;
+- matching theme applied to Template Type, Template Subtype, and Rename Bookmark dialogs;
+- best-effort Windows dark native title bar through DWM, with graceful fallback on unsupported Windows builds.
+
+Important files:
+
+- `src/LWTemplateHelper/AppTheme.cs`
+  - shared palette;
+  - button/grid/control styling;
+  - best-effort dark title bar.
+- `src/LWTemplateHelper/MainForm.cs`
+  - top action relocation;
+  - three-column bookmark workspace;
+  - dark status colors.
+- `src/LWTemplateHelper/ConfigurationDialogs.cs`
+- `src/LWTemplateHelper/BookmarkNameDialog.cs`
+
+Phase 9 commits:
+
+- shared dark theme: `ccf05ccc6686fe8bf58392e25767e750bc9d24ab`
+- main workspace redesign: `3b82ddaaaf5623195873b4d563aa7d8e83319236`
+- theme hardening: `a982ac5a491cf7cbc19a347478e03e873a6c6cca`
+- configuration dialogs themed: `85e2c92859ffec1bea7ae159074b00addcb6bf5d`
+- bookmark dialog themed: `959e41be3dba2fadbfd08207f12a6acd6c509ee5`
+
+---
+
 ---
 
 ## User-tested functionality
@@ -412,18 +461,19 @@ Use disposable/copy source templates for the first finalize test.
 
 ## Exact Next Step
 
-**Implement Phase 9 — Usability pass.**
+**User syncs and visually/manual-tests the Phase 9 UI redesign.**
 
-Keep this intentionally small and driven by real workflow friction. Good candidates:
+Check:
 
-- simplify/organize the now-crowded main window;
-- make primary actions visually clearer;
-- remember useful window/layout preferences if cheap;
-- improve status/confirmation messaging;
-- optionally surface bookmark text previews if it materially helps;
-- clean up abandoned temp session directories if straightforward.
+- top Template Configuration action flow;
+- three side-by-side bookmark grids at normal and maximized sizes;
+- dark theme readability;
+- disabled/enabled button states;
+- primary/destructive action emphasis;
+- themed configuration/rename dialogs;
+- no regression to the existing Word/bookmark/Test Mode/finalize workflows.
 
-Do not add speculative architecture or large new features.
+If the layout feels good, V1 is functionally complete. Only fix concrete issues found during use.
 
 ---
 

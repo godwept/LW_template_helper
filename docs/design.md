@@ -1,6 +1,6 @@
 # Letter Wizard Template Bookmark Manager — Design
 
-Status: **Accepted architecture; implementation in progress (Phases 1-8 implemented)**
+Status: **Accepted architecture; V1 feature set implemented through Phase 9; awaiting final usability confirmation**
 
 ## 1. Purpose
 
@@ -456,23 +456,40 @@ Primary areas:
 - English current selection
 - French current selection
 
-### Bookmark list
+### Bookmark workspace
 
-- name
-- English state
-- French state
-- actions
+Display the three bookmark groups side by side when screen width permits:
 
-### INFO area
+- Configured bookmarks
+- INFO bookmarks
+- Other Bookmarks
 
-- current INFO bookmarks/status
-- Add INFO
+Each grid shows bookmark name plus English/French state.
 
-### Validation/status area
+### Top configuration/actions
 
-- discrepancies
-- warnings
-- session status
+Keep the main session actions close to Template Type/Subtype selection:
+
+- Open Working Copies
+- Close Word Session
+- Validate
+- Save / Finalize
+- Side by Side
+- English Focus
+- French Focus
+
+### Visual language
+
+Use the same general visual family as the user's other internal automation tools:
+
+- dark navy/slate background;
+- blue section/header surfaces;
+- teal borders and primary accents;
+- red destructive actions;
+- high-contrast dark data grids;
+- restrained status colors suitable for a dark theme.
+
+Keep native WinForms behavior where practical rather than introducing custom window chrome or a new UI framework.
 
 The first version should favor clarity and speed over visual polish.
 

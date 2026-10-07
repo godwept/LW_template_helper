@@ -232,6 +232,8 @@ Manual verification:
 
 ## Phase 9 — Usability pass
 
+**Status:** Implemented / awaiting user visual/manual test
+
 Only after the full workflow works.
 
 Possible improvements:
