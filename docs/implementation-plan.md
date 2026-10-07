@@ -180,6 +180,8 @@ Build:
 
 ## Phase 7 — Test Mode
 
+**Status:** Implemented / awaiting user manual test
+
 **Goal:** safely simulate Letter Wizard manipulation.
 
 Build:
@@ -194,7 +196,7 @@ Build:
 - Close Test;
 - ensure source and working documents are never changed by test operations.
 
-Before finalizing this phase, compare the test behavior with the existing VBA implementation for representative bookmarks.
+Existing VBA semantics were reviewed before implementation: Set Value assigns bookmark Range.Text without recreating the bookmark; Delete uses Range.Delete on the bookmarked content/range.
 
 ---
 

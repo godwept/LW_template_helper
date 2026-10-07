@@ -1,6 +1,6 @@
 # Letter Wizard Template Bookmark Manager — Design
 
-Status: **Accepted architecture; implementation in progress (Phases 1-6 implemented)**
+Status: **Accepted architecture; implementation in progress (Phases 1-7 implemented)**
 
 ## 1. Purpose
 
@@ -375,15 +375,19 @@ When Test Mode begins:
 For an individual bookmark:
 
 **Set Value**
-- replace bookmarked content with a supplied test value;
-- preserve/recreate the bookmark as needed to mimic Letter Wizard behavior accurately.
+- replace bookmarked content with a supplied test value by assigning the bookmark range's Text;
+- match the current Letter Wizard VBA behavior: do not recreate the bookmark after the replacement;
+- INFO rows do not expose Set Value because INFO content is deletion-only in the Letter Wizard.
 
 **Delete**
-- simulate the Letter Wizard's deletion of the bookmarked content/range.
+- simulate the Letter Wizard's deletion by deleting the bookmarked range/content;
+- match the current VBA `Range.Delete` behavior.
 
 ### Reset test
 
 Reset should discard test copies and recreate them from the current working copies.
+
+Working documents are saved through Word before the new test snapshot is created.
 
 ### Close test
 
@@ -485,7 +489,7 @@ These should be resolved through small manual prototypes during implementation:
 1. Best reliable mechanism to capture and retain EN/FR Word ranges while the user switches between Word windows.
 2. Exact window positioning behavior across multiple monitors/DPI settings.
 3. How Word handles selection/range references after intervening edits and when a stored range should be invalidated.
-4. Exact Letter Wizard semantics for Set Value/Delete so Test Mode mirrors the VBA behavior.
+4. ~~Exact Letter Wizard semantics for Set Value/Delete so Test Mode mirrors the VBA behavior.~~ Resolved in Phase 7: Set Value assigns bookmark `Range.Text` without recreating the bookmark; Delete removes the bookmarked range/content with `Range.Delete`.
 5. Backup filename/location convention for final saves.
 
 None of these changes the overall architecture.

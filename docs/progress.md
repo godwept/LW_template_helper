@@ -10,11 +10,9 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 6 user-tested and complete; Locate Both window-position refinement awaiting quick retest.
+**Stage:** Phase 7 implemented; awaiting user manual testing.
 
-Phases 1-5 are complete and user-tested. Phase 6 adds the dedicated sequential `INFO_n` workflow using the same live Word-selection model as normal bookmarks.
-
-Test Mode has not started.
+Phases 1-6 are complete and user-tested. Phase 7 now provides disposable Test Mode copies for simulating the Letter Wizard's Set Value and Delete-content behavior without modifying working or source templates.
 
 ---
 
@@ -159,6 +157,71 @@ Phase 6 commits:
 - INFO status hardening: `2c671a291a9e315c8c62e779568bffc16ccdcd72`
 - Locate Both no longer repositions Word windows: `6c3b02414dbeada0de892ddfffeaf292a8f6bfa4`
 
+### Phase 7 — Test Mode
+
+Implemented on 2026-10-07.
+
+Test Mode lifecycle:
+
+- **Start Test Mode**
+  - saves the current working copies through Word;
+  - byte-copies them to `Test_E.docx` / `Test_F.docx` in the session directory;
+  - opens the test pair in the managed Word instance;
+  - leaves source templates untouched;
+  - leaves the working-copy documents separate from all test mutations.
+- **Reset Test**
+  - closes/discards the current test documents;
+  - saves the current working copies;
+  - recreates fresh test copies from the working documents.
+- **Close Test**
+  - closes the disposable test documents with Do Not Save;
+  - deletes the test files where possible;
+  - returns the manager to normal bookmark-editing mode.
+
+Test operations for the selected bookmark:
+
+- **Set Value**
+  - applies the entered test value to the bookmark in each test document where it exists;
+  - mirrors the existing Letter Wizard helper by assigning the bookmark's `Range.Text`;
+  - the bookmark marker is consumed by the Word range replacement and is not recreated;
+  - disabled for INFO rows because Letter Wizard INFO bookmarks are deletion-only.
+- **Delete Content**
+  - calls `Range.Delete` on the selected bookmark in each test document where it exists;
+  - deletes the bookmarked content/range, not merely the marker;
+  - available for normal, INFO, and Other Bookmark rows.
+
+Existing VBA behavior checked before implementation:
+
+- `setBMvalue` replaces `Bookmarks(name).Range.Text` without recreating the bookmark;
+- `deleteBookmark` deletes `Bookmarks(name).Range`;
+- INFO cleanup likewise uses `bm.Range.Delete`.
+
+UI behavior:
+
+- prominent red **TEST MODE ACTIVE** state;
+- normal bookmark mutation and working-copy locate/layout controls are disabled while Test Mode is active;
+- bookmark rows remain selectable so Set Value/Delete Content can target a bookmark;
+- the normal status grids continue to describe the working copies, not mutated test copies;
+- test operations report whether EN, FR, or both test documents contained the bookmark.
+
+Important files:
+
+- `src/LWTemplateHelper/WordSession.cs`
+  - test document lifecycle;
+  - test Set Value;
+  - test Delete Content;
+- `src/LWTemplateHelper/MainForm.cs`
+  - Test Mode controls;
+  - state locking;
+  - selected-bookmark test operations.
+
+Phase 7 commits:
+
+- test document lifecycle/operations: `b9df6c8ab3038cf1df4c6a728d26dd1625b221a8`
+- Test Mode UI: `2708256155f8cd9ddf4d579ac99840aa76b86121`
+
+---
+
 ---
 
 ## User-tested functionality
@@ -193,13 +256,18 @@ Confirmed working by the user:
 - Add INFO works from live EN/FR Word selections;
 - INFO mismatch/status display works;
 - Locate/Replace/Delete behavior works on INFO rows;
-- INFO bookmarks stay out of Other Bookmarks.
+- INFO bookmarks stay out of Other Bookmarks;
+- Locate Both no longer repositions Word windows.
+
+### Phase 7
+
+Not yet manually tested.
 
 ---
 
 ## Known Issues / Risks
 
-### Phase 6 has not been compiled/run by the implementation agent
+### Phase 7 has not been compiled/run by the implementation agent
 
 Changes were made directly through GitHub. The user workstation remains the authoritative build/runtime test environment.
 
@@ -234,43 +302,55 @@ Closing the Word session uses Do Not Save. Source replacement/backups remain Pha
 
 ---
 
-## Manual Test Checklist — Phase 6
+## Manual Test Checklist — Phase 7
 
 1. Sync latest `main`, build, and run.
-2. Open a subtype that already contains one or more `INFO_n` bookmarks if available.
-3. Confirm INFO bookmarks appear under the dedicated **INFO bookmarks** section and no longer appear under **Other Bookmarks**.
-4. Confirm INFO bookmarks present in both EN/FR are green.
-5. If an INFO exists on only one side, confirm it is red and the EN/FR status is clear.
-6. Confirm the displayed **Next** value is highest INFO number in either document + 1.
-7. If practical, create a gap manually (for example INFO_1 and INFO_4) and confirm Next is INFO_5, not INFO_2.
-8. Select new text in both Word documents and click **Add INFO**.
-9. Confirm the expected INFO name is created in both documents and status refreshes immediately.
-10. Select different EN/FR text and click **Add INFO** again; confirm the number increments.
-11. Select an INFO row and test Locate English / French / Both.
-12. Select replacement EN/FR text and use **Replace Range** on the INFO row; confirm the INFO name stays the same and its ranges move.
-13. Confirm **Rename** is disabled when an INFO row is selected.
-14. Use **Delete Bookmark** on an INFO row and confirm only the bookmark markers disappear, not the text.
-15. Confirm the next INFO number still follows highest existing number + 1 after deletions/gaps.
-16. Close the session and confirm the original source templates remain unchanged.
+2. Open a subtype and make at least one temporary bookmark edit in the working copies.
+3. Click **Start Test Mode**.
+4. Confirm:
+   - `Test_E.docx` and `Test_F.docx` open in Word;
+   - the manager clearly says **TEST MODE ACTIVE**;
+   - normal Add/Replace/Rename/Delete/Locate/layout controls are disabled;
+   - the original working documents remain open and unchanged.
+5. Select a normal bookmark row and leave the test value as `TEST VALUE`.
+6. Click **Set Value**.
+7. Inspect both test documents and confirm the bookmarked content was replaced by `TEST VALUE`.
+8. Confirm the working documents still contain their original bookmark/content.
+9. Confirm Set Value cannot simply be repeated on that same test bookmark without Reset, because the real Letter Wizard-style Range.Text replacement consumes the bookmark.
+10. Click **Reset Test**.
+11. Confirm the test documents return to the current working-copy state.
+12. Select a bookmark and click **Delete Content**.
+13. Confirm the bookmarked text/range disappears in the test documents, while the working documents remain untouched.
+14. Select an INFO row:
+   - confirm **Set Value** is disabled;
+   - confirm **Delete Content** works.
+15. If a bookmark exists on only one side, test it and confirm the manager reports EN-only or FR-only rather than modifying the other side.
+16. Click **Close Test** and confirm:
+   - the test documents close;
+   - normal bookmark-editing controls become available again;
+   - working documents remain intact.
+17. Start Test Mode again to confirm a fresh pair can be created after closing.
+18. Close the entire Word session and confirm source templates remain unchanged.
 
 ---
 
 ## Exact Next Step
 
-**User quickly retests Locate Both and confirms the Word windows remain where they were placed.**
+**User manually tests Phase 7 Test Mode.**
 
-After that, implement **Phase 7 — Test Mode**:
+If Phase 7 passes, implement **Phase 8 — Validation + final save**:
 
-- save the current working document state through Word;
-- create disposable `Test_E.docx` / `Test_F.docx`;
-- open the test pair;
-- clearly indicate Test Mode;
-- support Set Value and Delete-content simulation for a selected bookmark;
-- Reset Test;
-- Close Test;
-- guarantee test operations never change source or active working copies.
+- validation summary;
+- configured EN/FR mismatch warnings;
+- INFO mismatch warnings;
+- Other Bookmark warnings;
+- explicit Save/Finalize;
+- save working documents through Word;
+- back up source templates;
+- replace sources from working copies;
+- clear success/failure reporting.
 
-Before implementing exact Set Value/Delete behavior, inspect the existing Letter Wizard VBA semantics if available.
+Do not begin the Phase 9 usability pass until finalization is safe and user-tested.
 
 ---
 
