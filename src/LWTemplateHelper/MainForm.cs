@@ -21,6 +21,10 @@ internal sealed class MainForm : Form
     private readonly Button _locateEnglishButton = new() { Text = "Locate English", AutoSize = true, Enabled = false };
     private readonly Button _locateFrenchButton = new() { Text = "Locate French", AutoSize = true, Enabled = false };
     private readonly Button _locateBothButton = new() { Text = "Locate Both", AutoSize = true, Enabled = false };
+    private readonly Button _addBookmarkButton = new() { Text = "Add Bookmark", AutoSize = true, Enabled = false };
+    private readonly Button _replaceRangeButton = new() { Text = "Replace Range", AutoSize = true, Enabled = false };
+    private readonly Button _renameBookmarkButton = new() { Text = "Rename", AutoSize = true, Enabled = false };
+    private readonly Button _deleteBookmarkButton = new() { Text = "Delete Bookmark", AutoSize = true, Enabled = false };
 
     private readonly Label _englishSelection = new() { AutoSize = true, Text = "Not captured", Anchor = AnchorStyles.Left };
     private readonly Label _frenchSelection = new() { AutoSize = true, Text = "Not captured", Anchor = AnchorStyles.Left };
@@ -40,6 +44,7 @@ internal sealed class MainForm : Form
     private readonly TemplateConfigStore _configStore = new();
     private List<TemplateTypeConfig> _templateTypes = [];
     private string? _selectedBookmarkName;
+    private bool _selectedBookmarkIsConfigured;
 
     public MainForm()
     {
@@ -96,12 +101,18 @@ internal sealed class MainForm : Form
         _newSubtypeButton.Click += (_, _) => CreateSubtype();
         _editSubtypeButton.Click += (_, _) => EditSubtype();
 
-        _bookmarkGrid.CellClick += (_, e) => SelectBookmarkRow(_bookmarkGrid, _otherBookmarkGrid, e.RowIndex);
-        _otherBookmarkGrid.CellClick += (_, e) => SelectBookmarkRow(_otherBookmarkGrid, _bookmarkGrid, e.RowIndex);
+        _bookmarkGrid.CellClick += (_, e) =>
+            SelectBookmarkRow(_bookmarkGrid, _otherBookmarkGrid, e.RowIndex, configured: true);
+        _otherBookmarkGrid.CellClick += (_, e) =>
+            SelectBookmarkRow(_otherBookmarkGrid, _bookmarkGrid, e.RowIndex, configured: false);
         _refreshStatusButton.Click += (_, _) => RefreshBookmarkStatus();
         _locateEnglishButton.Click += (_, _) => LocateSelectedBookmark(_wordSession.LocateEnglish);
         _locateFrenchButton.Click += (_, _) => LocateSelectedBookmark(_wordSession.LocateFrench);
         _locateBothButton.Click += (_, _) => LocateSelectedBookmark(_wordSession.LocateBoth);
+        _addBookmarkButton.Click += (_, _) => AddSelectedBookmark();
+        _replaceRangeButton.Click += (_, _) => ReplaceSelectedBookmarkRange();
+        _renameBookmarkButton.Click += (_, _) => RenameSelectedBookmark();
+        _deleteBookmarkButton.Click += (_, _) => DeleteSelectedBookmark();
         _captureEnglishButton.Click += (_, _) => CaptureSelection(english: true);
         _captureFrenchButton.Click += (_, _) => CaptureSelection(english: false);
 
@@ -210,9 +221,10 @@ internal sealed class MainForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 6
+            RowCount = 7
         };
 
+        table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -237,8 +249,18 @@ internal sealed class MainForm : Form
         };
         locateToolbar.Controls.AddRange([_locateEnglishButton, _locateFrenchButton, _locateBothButton]);
 
+        var editToolbar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = false
+        };
+        editToolbar.Controls.AddRange(
+            [_addBookmarkButton, _replaceRangeButton, _renameBookmarkButton, _deleteBookmarkButton]);
+
         table.Controls.Add(statusToolbar);
         table.Controls.Add(locateToolbar);
+        table.Controls.Add(editToolbar);
         table.Controls.Add(new Label
         {
             Text = "Configured bookmarks — click a row to select it",
@@ -453,13 +475,18 @@ internal sealed class MainForm : Form
         _openButton.Enabled = false;
     }
 
-    private void SelectBookmarkRow(DataGridView selectedGrid, DataGridView otherGrid, int rowIndex)
+    private void SelectBookmarkRow(
+        DataGridView selectedGrid,
+        DataGridView otherGrid,
+        int rowIndex,
+        bool configured)
     {
         if (rowIndex < 0 || rowIndex >= selectedGrid.Rows.Count)
             return;
 
         object? value = selectedGrid.Rows[rowIndex].Cells["Bookmark"].Value;
         _selectedBookmarkName = value?.ToString();
+        _selectedBookmarkIsConfigured = configured;
 
         otherGrid.ClearSelection();
         UpdateBookmarkActionButtons();
@@ -468,6 +495,7 @@ internal sealed class MainForm : Form
     private void ClearSelectedBookmark()
     {
         _selectedBookmarkName = null;
+        _selectedBookmarkIsConfigured = false;
         _bookmarkGrid.ClearSelection();
         _otherBookmarkGrid.ClearSelection();
         UpdateBookmarkActionButtons();
@@ -476,9 +504,15 @@ internal sealed class MainForm : Form
     private void UpdateBookmarkActionButtons()
     {
         bool enabled = _wordSession.IsOpen && !string.IsNullOrWhiteSpace(_selectedBookmarkName);
+
         _locateEnglishButton.Enabled = enabled;
         _locateFrenchButton.Enabled = enabled;
         _locateBothButton.Enabled = enabled;
+
+        _addBookmarkButton.Enabled = enabled && _selectedBookmarkIsConfigured;
+        _replaceRangeButton.Enabled = enabled;
+        _renameBookmarkButton.Enabled = enabled;
+        _deleteBookmarkButton.Enabled = enabled;
     }
 
     private void LocateSelectedBookmark(Action<string> locateAction)
@@ -494,6 +528,81 @@ internal sealed class MainForm : Form
         catch (Exception ex)
         {
             MessageBox.Show(this, ex.Message, "Locate bookmark", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+    }
+
+    private void AddSelectedBookmark()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedBookmarkName) || !_selectedBookmarkIsConfigured)
+            return;
+
+        RunBookmarkEdit(
+            () => _wordSession.AddBookmark(_selectedBookmarkName),
+            $"Added bookmark '{_selectedBookmarkName}' to both working copies.");
+    }
+
+    private void ReplaceSelectedBookmarkRange()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedBookmarkName))
+            return;
+
+        RunBookmarkEdit(
+            () => _wordSession.ReplaceBookmarkRange(_selectedBookmarkName),
+            $"Replaced range for bookmark '{_selectedBookmarkName}' in both working copies.");
+    }
+
+    private void RenameSelectedBookmark()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedBookmarkName))
+            return;
+
+        string oldName = _selectedBookmarkName;
+
+        using var dialog = new BookmarkNameDialog(oldName);
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+            return;
+
+        string newName = dialog.BookmarkName;
+
+        RunBookmarkEdit(
+            () => _wordSession.RenameBookmark(oldName, newName),
+            $"Renamed bookmark '{oldName}' to '{newName}'. Template Type configuration was not changed.");
+    }
+
+    private void DeleteSelectedBookmark()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedBookmarkName))
+            return;
+
+        string bookmarkName = _selectedBookmarkName;
+
+        var result = MessageBox.Show(
+            this,
+            $"Remove bookmark markers for '{bookmarkName}' from the working copies?\n\nThe bookmarked text will not be deleted.",
+            "Delete bookmark markers",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+
+        if (result != DialogResult.Yes)
+            return;
+
+        RunBookmarkEdit(
+            () => _wordSession.DeleteBookmarkMarkers(bookmarkName),
+            $"Removed bookmark markers for '{bookmarkName}'. Document text was preserved.");
+    }
+
+    private void RunBookmarkEdit(Action action, string successMessage)
+    {
+        try
+        {
+            action();
+            RefreshBookmarkStatus();
+            _status.Text = successMessage;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Bookmark operation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
     }
 
@@ -753,6 +862,7 @@ internal sealed class MainForm : Form
             _bookmarkGrid.ClearSelection();
             _otherBookmarkGrid.ClearSelection();
             _selectedBookmarkName = null;
+            _selectedBookmarkIsConfigured = false;
             UpdateBookmarkActionButtons();
 
             _bookmarkSummary.Text =
