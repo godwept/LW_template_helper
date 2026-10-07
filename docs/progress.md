@@ -10,7 +10,7 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 5 implemented; awaiting user manual testing.
+**Stage:** Phase 5 core operations user-tested; simplified live-selection workflow awaiting quick retest.
 
 Phases 1-4 are complete and user-tested. Phase 5 now adds the core bookmark-authoring operations against the temporary working copies.
 
@@ -70,9 +70,9 @@ Phase 3 implementation commit:
 
 `3ca870fc18830d5e4f6fb77b1abfbc50829c28e1`
 
-### Phase 4 — Locate + selection capture
+### Phase 4 — Locate + Word selection handling
 
-Implemented on 2026-10-07.
+Implemented on 2026-10-07 and later simplified during Phase 5.
 
 Features:
 
@@ -80,36 +80,23 @@ Features:
 - **Locate English** selects/highlights that bookmark range in the English working copy;
 - **Locate French** selects/highlights it in the French working copy;
 - **Locate Both** locates the same bookmark in both documents and restores Side by Side;
-- clear message if the selected bookmark does not exist in the requested language;
-- explicit **Capture English** and **Capture French** workflow;
-- captured English/French selections are stored independently as duplicated Word `Range` objects;
-- short previews are shown in the manager;
-- recapturing replaces the previously stored range for that language;
-- collapsed/no-text-cursor selections are rejected;
-- captured ranges are re-checked when bookmark status refreshes;
-- clearly invalid/collapsed captured ranges are discarded;
-- captured COM ranges are explicitly released when replaced or when the Word session closes.
+- clear message if the selected bookmark does not exist in the requested language.
 
-Implementation decision:
+Selection workflow refinement:
 
-Use explicit capture buttons instead of Word selection-change events. This is the least complicated/reliable approach allowed by the design and avoids fragile event handling while switching between two Word windows.
+The original Phase 4 implementation added explicit **Capture English** / **Capture French** buttons and stored duplicated Word Range objects. After user testing, this was judged unnecessary.
 
-Important files:
+The current workflow relies on Word preserving the current selection independently in each document window. **Add Bookmark** and **Replace Range** read both live Word selections at the moment the action is clicked. This removes the extra capture step and reduces UI/state complexity.
 
-- `src/LWTemplateHelper/WordSession.cs`
-  - Locate English/French/Both
-  - captured Word Range storage
-  - capture/read validation
-  - selection preview generation
-- `src/LWTemplateHelper/MainForm.cs`
-  - bookmark-row selection
-  - Locate buttons
-  - Capture buttons
-  - EN/FR selection previews
-
-Phase 4 implementation commit:
+Original Phase 4 implementation commit:
 
 `ab3954d30a3214c4763db98b8daaf7f2805a7488`
+
+Live-selection simplification commits:
+
+- `3c55e51034a66056a46104db1988e61a35c17fe2`
+- `a2068b23719ecb529332cc0bbd914f395144deff`
+- `1453880b211790192ec8ee82b02c5333d33bda99`
 
 ### Phase 5 — Bookmark creation/editing
 
@@ -119,12 +106,12 @@ Features:
 
 - **Add Bookmark**
   - available for configured Template Type bookmark rows;
-  - requires valid captured English and French selections;
-  - creates the same bookmark around both captured ranges;
+  - uses the current English and French Word selections;
+  - creates the same bookmark around both current Word selections;
   - refuses to overwrite if the bookmark already exists in either working copy.
 - **Replace Range**
   - requires valid captured English and French selections;
-  - recreates the selected bookmark around both captured ranges;
+  - recreates the selected bookmark around both current Word selections;
   - can repair an EN/FR mismatch by creating the missing side while moving the existing side;
   - does not change the selected document text.
 - **Rename**
@@ -218,23 +205,13 @@ Confirmed working by the user:
 
 Changes were made directly through GitHub. The user workstation remains the authoritative build/runtime test environment.
 
-### Explicit capture is intentional
+### Live Word selections are now the source of truth
 
-The app does not automatically follow every Word selection change.
+The explicit Capture step was removed after user testing.
 
-Workflow is:
+For Add Bookmark and Replace Range, the user selects the desired text in both Word windows, returns to the manager, and clicks the action. The app reads each Word window's current selection at that moment.
 
-1. select text in the English or French Word working copy;
-2. return to the manager;
-3. click the matching Capture button.
-
-This keeps range capture deterministic and avoids event/lifecycle complexity.
-
-### Stored Word ranges can move with edits
-
-Microsoft Word Range objects can adjust their positions as nearby text is edited. Phase 4 re-checks that captured ranges are still non-collapsed and accessible, but it cannot prove that a heavily edited range still represents the user's original semantic intent.
-
-The preview is therefore important. The user can simply recapture whenever needed.
+If either selection is collapsed, the operation is rejected with a clear message.
 
 ### Locate Both requires the bookmark in both languages
 
@@ -266,11 +243,11 @@ Use temporary working copies opened through the app.
 
 1. Sync latest `main`, build, and run.
 2. Open a subtype with at least one configured bookmark missing from both documents.
-3. Select matching English/French text and capture both ranges.
+3. Select the desired text in the English working copy and the desired text in the French working copy.
 4. Select the missing configured bookmark row and click **Add Bookmark**.
 5. Confirm status immediately changes to **Exists / Exists** and Locate Both selects the new ranges.
 6. Try **Add Bookmark** again for the same bookmark and confirm it refuses to overwrite it.
-7. Capture two different EN/FR ranges, select an existing bookmark, and click **Replace Range**.
+7. Select two different EN/FR ranges directly in Word, select an existing bookmark, and click **Replace Range**.
 8. Locate the bookmark afterward and confirm it moved to the new ranges without changing text.
 9. If practical, test Replace Range on an EN/FR mismatch and confirm the missing side is repaired.
 10. Select an existing bookmark and click **Rename**.
@@ -287,7 +264,7 @@ Use temporary working copies opened through the app.
 
 ## Exact Next Step
 
-**User manually tests Phase 5.**
+**User quickly retests the simplified Phase 5 live-selection workflow.**
 
 If Phase 5 passes, implement **Phase 6 — INFO bookmarks**:
 

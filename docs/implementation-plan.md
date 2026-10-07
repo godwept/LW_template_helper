@@ -122,7 +122,7 @@ This phase should not alter bookmark ranges yet.
 
 ---
 
-## Phase 4 — Locate + selection capture
+## Phase 4 — Locate + selection handling
 
 **Status:** Complete / user-tested
 
@@ -133,14 +133,11 @@ Build:
 - Locate English.
 - Locate French.
 - Locate Both if practical.
-- capture/store last meaningful English selection.
-- capture/store last meaningful French selection.
-- show short selection previews in the manager.
-- detect clearly invalid/stale selections where possible.
+- use Word's independent per-window selections as the source for later editing actions;
+- reject collapsed selections when an edit action requires a range;
+- avoid extra manager-side capture state unless later testing proves it necessary.
 
-Try the least complicated reliable event approach first. If Word selection-change handling proves fragile, an explicit `Capture English` / `Capture French` workflow is acceptable.
-
-Reliability beats cleverness.
+The original explicit Capture workflow was removed after user testing because Word already preserves each document window's selection.
 
 ---
 
@@ -152,7 +149,7 @@ Reliability beats cleverness.
 
 Build:
 
-- click bookmark name to add around captured EN/FR ranges;
+- click bookmark name to add around the current EN/FR Word selections;
 - delete bookmark markers;
 - replace bookmark range;
 - rename bookmark;

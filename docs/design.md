@@ -218,29 +218,21 @@ Configuration details can evolve as actual usage clarifies requirements.
 
 The user selects bookmark ranges directly in Word.
 
-Because English and French are separate Word windows, the manager must remember the most recent valid selection independently for each managed document.
+English and French are separate Word windows, and Word preserves the current selection in each window independently.
 
-The UI should show a small selection summary:
+For operations that require new ranges, such as Add Bookmark and Replace Range:
 
-```
-English: ✓ "the employee's return date"
-French:  ✓ "la date de retour de l'employé"
-```
+1. select the desired English text in the English working copy;
+2. select the desired French text in the French working copy;
+3. return to the manager and choose the bookmark action;
+4. the manager reads both Word selections at that moment;
+5. reject the operation if either selection is collapsed;
+6. create/recreate the bookmark around those ranges;
+7. refresh bookmark status.
 
-When the user clicks a normal bookmark name:
-
-1. confirm that valid English and French selections have been captured;
-2. create that bookmark around the English range;
-3. create the same bookmark around the French range;
-4. refresh bookmark status.
+No explicit Capture step is required and the manager does not maintain duplicate selection state.
 
 No fuzzy matching or automatic translation alignment is performed.
-
-Selection capture uses explicit **Capture English** and **Capture French** buttons.
-
-The user selects text directly in the appropriate Word working copy, then clicks the matching Capture button in the manager. The manager stores a duplicated Word Range independently for each language and displays a short preview.
-
-This explicit workflow was chosen over Word selection-change events because it is simpler and more reliable while switching between two Word windows.
 
 ---
 
@@ -287,7 +279,7 @@ Required operations:
 
 ### Add
 
-Create the selected configured bookmark around the stored English and French ranges.
+Create the selected configured bookmark around the current English and French Word selections.
 
 Add must not silently overwrite an existing bookmark. If the name already exists in either working copy, the user should use Replace Range instead.
 
@@ -303,11 +295,11 @@ Support:
 
 ### Change range
 
-User selects replacement English/French ranges and chooses Replace Range.
+User selects replacement English/French ranges directly in Word and chooses Replace Range.
 
 The existing bookmark markers are replaced with bookmarks around the new ranges without changing the selected document text.
 
-Replace Range may also repair an EN/FR mismatch by recreating the selected bookmark on both captured ranges.
+Replace Range may also repair an EN/FR mismatch by recreating the selected bookmark on both current Word selections.
 
 ### Rename
 
