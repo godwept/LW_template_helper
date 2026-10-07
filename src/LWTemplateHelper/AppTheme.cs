@@ -58,6 +58,7 @@ internal static class AppTheme
         button.BackColor = PanelBackAlt;
         button.ForeColor = Text;
         button.Padding = new Padding(8, 2, 8, 2);
+        button.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
         button.UseVisualStyleBackColor = false;
     }
 
@@ -107,12 +108,14 @@ internal static class AppTheme
                     textBox.BackColor = textBox.ReadOnly ? PanelBackAlt : InputBack;
                     textBox.ForeColor = Text;
                     textBox.BorderStyle = BorderStyle.FixedSingle;
+                    textBox.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
                     break;
 
                 case ComboBox combo:
                     combo.BackColor = InputBack;
                     combo.ForeColor = Text;
                     combo.FlatStyle = FlatStyle.Flat;
+                    combo.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
                     break;
 
                 case GroupBox group:
@@ -123,11 +126,10 @@ internal static class AppTheme
 
                 case Label label:
                     label.ForeColor = Text;
+                    label.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
                     break;
 
                 case Panel:
-                case TableLayoutPanel:
-                case FlowLayoutPanel:
                     control.BackColor = Color.Transparent;
                     break;
             }
