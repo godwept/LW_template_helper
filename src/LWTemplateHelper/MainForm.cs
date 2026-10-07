@@ -85,7 +85,7 @@ internal sealed class MainForm : Form
             RowCount = 5
         };
 
-        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 155));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 175));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
