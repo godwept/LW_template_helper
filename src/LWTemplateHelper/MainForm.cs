@@ -322,6 +322,7 @@ internal sealed class MainForm : Form
             RowCount = 1,
             Margin = new Padding(0, 4, 0, 8)
         };
+        actionRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
