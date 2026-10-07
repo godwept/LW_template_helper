@@ -10,11 +10,11 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 5 core operations user-tested; simplified live-selection workflow awaiting quick retest.
+**Stage:** Phase 6 implemented; awaiting user manual testing.
 
-Phases 1-4 are complete and user-tested. Phase 5 now adds the core bookmark-authoring operations against the temporary working copies.
+Phases 1-5 are complete and user-tested. Phase 6 adds the dedicated sequential `INFO_n` workflow using the same live Word-selection model as normal bookmarks.
 
-INFO bookmarks and Test Mode have not started.
+Test Mode has not started.
 
 ---
 
@@ -28,11 +28,10 @@ Implemented:
 
 - C# WinForms application;
 - dedicated Microsoft Word instance through `Microsoft.Office.Interop.Word`;
-- safe temp working copies;
-- originals are never opened by the managed Word session;
+- safe temporary `Working_E.docx` / `Working_F.docx`;
+- source templates are not opened for editing;
 - Side by Side using native Windows 50/50 positioning;
-- English Focus;
-- French Focus;
+- English Focus / French Focus;
 - clean managed Word/session shutdown.
 
 Top / Bottom was removed after manual testing because it was not useful with the available vertical screen space.
@@ -46,11 +45,10 @@ Implemented:
 - Template Type and subtype selectors;
 - create/edit Template Type;
 - create/edit subtype;
-- configured bookmark-name list per Template Type;
+- configured normal bookmark list per Template Type;
 - EN/FR source paths per subtype;
 - JSON persistence under `%LOCALAPPDATA%\LWTemplateHelper\TemplateTypes`;
-- basic Word bookmark-name validation;
-- subtype configuration feeds the existing working-copy workflow.
+- Word bookmark-name validation.
 
 ### Phase 3 — Bookmark discovery/status
 
@@ -58,13 +56,11 @@ User-tested and complete.
 
 Implemented:
 
-- enumerate visible bookmarks from `Working_E.docx`;
-- enumerate visible bookmarks from `Working_F.docx`;
-- compare them case-insensitively against configured bookmarks;
-- show EN/FR status;
-- show **Other Bookmarks**;
+- enumerate visible bookmarks in both working documents;
+- configured bookmark EN/FR status;
+- **Other Bookmarks**;
 - Refresh Status;
-- clear visual mismatch indication.
+- clear mismatch highlighting.
 
 Phase 3 implementation commit:
 
@@ -72,27 +68,20 @@ Phase 3 implementation commit:
 
 ### Phase 4 — Locate + Word selection handling
 
-Implemented on 2026-10-07 and later simplified during Phase 5.
+User-tested and complete.
 
-Features:
+Implemented:
 
-- click a configured or Other Bookmark row to select that bookmark;
-- **Locate English** selects/highlights that bookmark range in the English working copy;
-- **Locate French** selects/highlights it in the French working copy;
-- **Locate Both** locates the same bookmark in both documents and restores Side by Side;
-- clear message if the selected bookmark does not exist in the requested language.
+- Locate English;
+- Locate French;
+- Locate Both;
+- clear missing-side messages.
 
-Selection workflow refinement:
+Selection workflow was simplified after user testing.
 
-The original Phase 4 implementation added explicit **Capture English** / **Capture French** buttons and stored duplicated Word Range objects. After user testing, this was judged unnecessary.
+The original explicit Capture buttons/range storage were removed. Word's current selection in each document window is now the source of truth. Add Bookmark, Replace Range, and Add INFO read those two selections when the action is clicked.
 
-The current workflow relies on Word preserving the current selection independently in each document window. **Add Bookmark** and **Replace Range** read both live Word selections at the moment the action is clicked. This removes the extra capture step and reduces UI/state complexity.
-
-Original Phase 4 implementation commit:
-
-`ab3954d30a3214c4763db98b8daaf7f2805a7488`
-
-Live-selection simplification commits:
+Relevant simplification commits:
 
 - `3c55e51034a66056a46104db1988e61a35c17fe2`
 - `a2068b23719ecb529332cc0bbd914f395144deff`
@@ -100,181 +89,180 @@ Live-selection simplification commits:
 
 ### Phase 5 — Bookmark creation/editing
 
+User-tested and complete.
+
+Implemented:
+
+- **Add Bookmark** using current EN/FR Word selections;
+- **Replace Range** using current EN/FR Word selections;
+- **Rename** while preserving bookmark ranges;
+- **Delete Bookmark** removes markers only, never bookmarked text;
+- automatic status refresh after app-driven edits;
+- duplicate/invalid operation protection;
+- paired EN/FR operations attempt rollback if the second side fails.
+
+Important behavior:
+
+- Add refuses to overwrite an existing bookmark;
+- Replace Range can repair an EN/FR mismatch;
+- Rename changes the working documents only and does not silently change the shared Template Type configuration.
+
+Phase 5 commits:
+
+- `b937bc344384ccdecd0156c1a417eea5138cbb48`
+- `4035f3c52908940b245dde61ef9959f9cdabc496`
+- `f992e634a2885e8d8f1af0ad394f882f2bedef4d`
+
+### Phase 6 — INFO bookmarks
+
 Implemented on 2026-10-07.
 
 Features:
 
-- **Add Bookmark**
-  - available for configured Template Type bookmark rows;
-  - uses the current English and French Word selections;
-  - creates the same bookmark around both current Word selections;
-  - refuses to overwrite if the bookmark already exists in either working copy.
-- **Replace Range**
-  - requires valid captured English and French selections;
-  - recreates the selected bookmark around both current Word selections;
-  - can repair an EN/FR mismatch by creating the missing side while moving the existing side;
-  - does not change the selected document text.
-- **Rename**
-  - preserves each existing bookmark range;
-  - renames the bookmark in whichever working copies currently contain it;
-  - validates the new Word bookmark name;
-  - refuses a target name already present in either working copy;
-  - intentionally does **not** change the shared Template Type configuration.
-- **Delete Bookmark**
-  - removes bookmark markers only;
-  - never deletes bookmarked text;
-  - asks for confirmation first;
-  - removes the selected bookmark from whichever working copies contain it.
-- bookmark status automatically refreshes after every successful app-driven edit;
-- obvious duplicate/invalid operations are rejected with clear messages;
-- paired operations attempt to restore prior bookmark markers if the second document operation fails.
+- recognizes `INFO_n` bookmarks case-insensitively where `n >= 1`;
+- INFO bookmarks are displayed in a dedicated status grid rather than under Other Bookmarks;
+- INFO rows show EN/FR existence;
+- mismatched INFO rows are highlighted red;
+- matched INFO rows are highlighted green;
+- INFO summary shows matched count, mismatch count, and the next INFO name;
+- **Add INFO**:
+  - reads the current English and French Word selections;
+  - scans both documents;
+  - finds the highest INFO number present in either document;
+  - creates `INFO_(highest + 1)` in both documents;
+  - never fills old gaps automatically;
+  - refreshes status immediately;
+- normal Locate English/French/Both works on selected INFO rows;
+- Replace Range works on INFO rows;
+- Delete Bookmark works on INFO rows and preserves text;
+- Rename is intentionally disabled for INFO rows so sequential INFO naming is not accidentally broken.
+
+Example numbering:
+
+`INFO_1`, `INFO_2`, `INFO_4` => next is `INFO_5`.
 
 Important files:
 
 - `src/LWTemplateHelper/WordSession.cs`
-  - Add Bookmark
-  - Replace Range
-  - Rename
-  - Delete bookmark markers
-  - paired EN/FR operation rollback
+  - `AddNextInfoBookmark()`
+  - `TryGetInfoNumber()`
 - `src/LWTemplateHelper/MainForm.cs`
-  - Phase 5 edit toolbar/actions
-  - confirmations/status refresh
-- `src/LWTemplateHelper/BookmarkNameDialog.cs`
-  - bookmark rename UI and validation
+  - INFO status grid
+  - Add INFO
+  - INFO mismatch display
+  - INFO exclusion from Other Bookmarks
 
-Phase 5 commits:
+Phase 6 commits:
 
-- Word bookmark operations: `b937bc344384ccdecd0156c1a417eea5138cbb48`
-- editing UI: `4035f3c52908940b245dde61ef9959f9cdabc496`
-- rename dialog: `f992e634a2885e8d8f1af0ad394f882f2bedef4d`
-
----
+- sequential INFO creation: `4aad24631568c7f087bf81174e194939f371ff79`
+- INFO UI/status: `f2bf667eee4bee5d5f5cee5bc2b92736d85a8b1d`
+- INFO status hardening: `2c671a291a9e315c8c62e779568bffc16ccdcd72`
 
 ---
 
 ## User-tested functionality
 
-### Phase 1
+### Phases 1-4
 
-Confirmed working by the user:
+Confirmed working by the user, including:
 
-- application builds/runs;
-- EN/FR templates open as temporary working copies;
-- originals remain unchanged;
-- Side by Side 50/50 layout works;
-- English/French Focus work;
-- managed Word session closes cleanly.
+- Word lifecycle/layout;
+- Template Type/Subtype configuration and persistence;
+- bookmark discovery/status;
+- locate operations;
+- Word selection handling.
 
-### Phase 2
+### Phase 5
 
-Confirmed working by the user:
+Confirmed working by the user after the Capture step was removed:
 
-- Template Types/bookmark lists can be created and edited;
-- subtypes and EN/FR paths can be created and edited;
-- configuration persists after restart;
-- selected subtype opens through the Word working-copy workflow.
+- Add Bookmark;
+- Replace Range;
+- Rename;
+- Delete Bookmark;
+- live EN/FR Word selections work without explicit capture;
+- automatic status refresh remains usable.
 
-### Phase 3
+### Phase 6
 
-Confirmed working by the user:
-
-- configured bookmark EN/FR status matches the open working documents;
-- mismatch highlighting works;
-- Other Bookmarks display works;
-- Refresh Status updates after manual bookmark changes;
-- existing Word/session behavior remains intact.
-
-### Phase 4
-
-Confirmed working by the user:
-
-- Locate English works;
-- Locate French works;
-- Locate Both works;
-- explicit English/French selection capture works;
-- captured selection previews remain usable;
-- Refresh Status does not wipe valid captures;
-- Phase 1-3 behavior remains intact.
+Not yet manually tested.
 
 ---
 
 ## Known Issues / Risks
 
-### Phase 5 has not been compiled/run by the implementation agent
+### Phase 6 has not been compiled/run by the implementation agent
 
 Changes were made directly through GitHub. The user workstation remains the authoritative build/runtime test environment.
 
-### Live Word selections are now the source of truth
+### INFO numbering is global across the EN/FR pair
 
-The explicit Capture step was removed after user testing.
+The next INFO number is based on the highest valid `INFO_n` found in either working document.
 
-For Add Bookmark and Replace Range, the user selects the desired text in both Word windows, returns to the manager, and clicks the action. The app reads each Word window's current selection at that moment.
+This deliberately preserves numbering across mismatches and gaps.
 
-If either selection is collapsed, the operation is rejected with a clear message.
+### INFO rename is disabled
 
-### Locate Both requires the bookmark in both languages
+INFO rows can be located, moved with Replace Range, or deleted, but not renamed through the normal Rename command.
 
-If a bookmark is missing from one document, Locate Both reports that missing side. The individual Locate English/French commands remain available.
+This keeps INFO numbering predictable.
 
-### Rename does not update Template Type configuration
+### Live Word selections are the source of truth
 
-Renaming a bookmark changes the working Word documents only.
+For Add Bookmark, Replace Range, and Add INFO:
 
-This is intentional because a Template Type is shared by multiple subtypes; silently renaming the Template Type bookmark definition while editing one subtype could make other subtypes inconsistent.
+1. select the English text in the English Word window;
+2. select the French text in the French Word window;
+3. return to the manager;
+4. click the operation.
 
-If the shared configured name itself should change, edit the Template Type explicitly.
+If either selection is collapsed, the operation is rejected.
 
-### Working-copy edits are still disposable
+### Working-copy edits are disposable until Finalize
 
-Phase 5 edits only `Working_E.docx` and `Working_F.docx`.
+All editing phases currently modify only the session working copies.
 
-Closing the managed session still discards unsaved working-copy edits. Final source replacement remains Phase 8.
-
-### INFO bookmarks and Test Mode remain future phases
-
-Phase 5 does not add the sequential INFO workflow or any Letter Wizard simulation.
+Closing the Word session uses Do Not Save. Source replacement/backups remain Phase 8.
 
 ---
 
-## Manual Test Checklist — Phase 5
-
-Use temporary working copies opened through the app.
+## Manual Test Checklist — Phase 6
 
 1. Sync latest `main`, build, and run.
-2. Open a subtype with at least one configured bookmark missing from both documents.
-3. Select the desired text in the English working copy and the desired text in the French working copy.
-4. Select the missing configured bookmark row and click **Add Bookmark**.
-5. Confirm status immediately changes to **Exists / Exists** and Locate Both selects the new ranges.
-6. Try **Add Bookmark** again for the same bookmark and confirm it refuses to overwrite it.
-7. Select two different EN/FR ranges directly in Word, select an existing bookmark, and click **Replace Range**.
-8. Locate the bookmark afterward and confirm it moved to the new ranges without changing text.
-9. If practical, test Replace Range on an EN/FR mismatch and confirm the missing side is repaired.
-10. Select an existing bookmark and click **Rename**.
-11. Confirm its text/range is unchanged and the new name appears in status.
-12. Confirm a configured rename leaves the Template Type configuration unchanged (old configured name becomes missing; new name appears under Other Bookmarks).
-13. Try renaming to an invalid name or an already-existing bookmark and confirm it is rejected.
-14. Select a bookmark and click **Delete Bookmark**.
-15. Confirm the confirmation dialog clearly states that text will be preserved.
-16. Confirm only the bookmark markers disappear and all document text remains.
-17. Confirm status refreshes automatically after Add, Replace, Rename, and Delete.
-18. Close the Word session and confirm the original source templates remain unchanged.
+2. Open a subtype that already contains one or more `INFO_n` bookmarks if available.
+3. Confirm INFO bookmarks appear under the dedicated **INFO bookmarks** section and no longer appear under **Other Bookmarks**.
+4. Confirm INFO bookmarks present in both EN/FR are green.
+5. If an INFO exists on only one side, confirm it is red and the EN/FR status is clear.
+6. Confirm the displayed **Next** value is highest INFO number in either document + 1.
+7. If practical, create a gap manually (for example INFO_1 and INFO_4) and confirm Next is INFO_5, not INFO_2.
+8. Select new text in both Word documents and click **Add INFO**.
+9. Confirm the expected INFO name is created in both documents and status refreshes immediately.
+10. Select different EN/FR text and click **Add INFO** again; confirm the number increments.
+11. Select an INFO row and test Locate English / French / Both.
+12. Select replacement EN/FR text and use **Replace Range** on the INFO row; confirm the INFO name stays the same and its ranges move.
+13. Confirm **Rename** is disabled when an INFO row is selected.
+14. Use **Delete Bookmark** on an INFO row and confirm only the bookmark markers disappear, not the text.
+15. Confirm the next INFO number still follows highest existing number + 1 after deletions/gaps.
+16. Close the session and confirm the original source templates remain unchanged.
 
 ---
 
 ## Exact Next Step
 
-**User quickly retests the simplified Phase 5 live-selection workflow.**
+**User manually tests Phase 6.**
 
-If Phase 5 passes, implement **Phase 6 — INFO bookmarks**:
+If Phase 6 passes, implement **Phase 7 — Test Mode**:
 
-- detect `INFO_n` in both working documents;
-- calculate next INFO number as highest found in either document + 1;
-- add the same INFO bookmark around captured EN/FR ranges;
-- show INFO EN/FR discrepancies;
-- reuse normal locate/delete/change-range behavior where practical.
+- save the current working document state through Word;
+- create disposable `Test_E.docx` / `Test_F.docx`;
+- open the test pair;
+- clearly indicate Test Mode;
+- support Set Value and Delete-content simulation for a selected bookmark;
+- Reset Test;
+- Close Test;
+- guarantee test operations never change source or active working copies.
 
-Do not implement Test Mode yet.
+Before implementing exact Set Value/Delete behavior, inspect the existing Letter Wizard VBA semantics if available.
 
 ---
 
@@ -282,7 +270,7 @@ Do not implement Test Mode yet.
 
 Keep the implementation direct and lightweight.
 
-The architecture remains unchanged:
+The architecture remains:
 
 - WinForms control panel;
 - real Microsoft Word windows;

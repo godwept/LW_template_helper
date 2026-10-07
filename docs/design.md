@@ -1,6 +1,6 @@
 # Letter Wizard Template Bookmark Manager — Design
 
-Status: **Accepted architecture; implementation in progress (Phases 1-5 implemented)**
+Status: **Accepted architecture; implementation in progress (Phases 1-6 implemented)**
 
 ## 1. Purpose
 
@@ -329,12 +329,15 @@ The manager provides a prominent **Add INFO** action.
 
 Workflow:
 
-1. select matching English text;
-2. select matching French text;
-3. click Add INFO;
+1. select matching English text in the English working copy;
+2. select matching French text in the French working copy;
+3. click **Add INFO**;
 4. scan both documents for existing `INFO_n` bookmarks;
 5. determine the next number;
-6. create the same INFO bookmark in both documents.
+6. create the same INFO bookmark around the two current Word selections;
+7. refresh INFO status.
+
+INFO bookmarks are displayed in their own status area rather than under Other Bookmarks. Normal locate, replace-range, and delete-marker behavior is reused. Rename is disabled for INFO rows so sequential INFO naming remains predictable.
 
 ### Numbering rule
 

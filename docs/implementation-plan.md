@@ -143,7 +143,7 @@ The original explicit Capture workflow was removed after user testing because Wo
 
 ## Phase 5 — Bookmark creation/editing
 
-**Status:** Implemented / awaiting user manual test
+**Status:** Complete / user-tested
 
 **Goal:** deliver the core bookmark-authoring workflow.
 
@@ -163,6 +163,8 @@ Manual verification should use a disposable copy of a real template and inspect 
 
 ## Phase 6 — INFO bookmarks
 
+**Status:** Implemented / awaiting user manual test
+
 **Goal:** make repetitive informational bookmarks fast.
 
 Build:
@@ -170,7 +172,7 @@ Build:
 - detect `INFO_n` bookmarks in both documents;
 - display INFO status;
 - calculate next number as highest found in either document + 1;
-- Add INFO using captured EN/FR selections;
+- Add INFO using the current EN/FR Word selections;
 - flag EN/FR INFO discrepancies;
 - locate/delete/change INFO ranges using normal bookmark management where practical.
 
