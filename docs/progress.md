@@ -324,6 +324,14 @@ Phase 9 commits:
 - theme hardening: `a982ac5a491cf7cbc19a347478e03e873a6c6cca`
 - configuration dialogs themed: `85e2c92859ffec1bea7ae159074b00addcb6bf5d`
 - bookmark dialog themed: `959e41be3dba2fadbfd08207f12a6acd6c509ee5`
+- readable disabled-button rendering: `b83b26ede8ebe7cc9f247125e842c7cb158e48ae`
+- main buttons switched to themed control: `26abbe9e35ea82a848a58a347c00edbfa0ad8ebf`
+
+Visual test feedback:
+
+- user liked the overall new layout/theme direction;
+- disabled buttons were too dark to read because WinForms used its system disabled-text rendering;
+- main-window buttons now use a small custom themed button control that paints disabled states with muted light text and a subdued border/background while preserving real `Enabled = false` behavior.
 
 ---
 
@@ -468,7 +476,7 @@ Check:
 - top Template Configuration action flow;
 - three side-by-side bookmark grids at normal and maximized sizes;
 - dark theme readability;
-- disabled/enabled button states;
+- disabled/enabled button states, especially readability of disabled labels;
 - primary/destructive action emphasis;
 - themed configuration/rename dialogs;
 - no regression to the existing Word/bookmark/Test Mode/finalize workflows.
