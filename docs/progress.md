@@ -10,9 +10,9 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 8 implemented; awaiting user manual testing.
+**Stage:** Phase 8 complete and user-tested; ready for Phase 9.
 
-Phases 1-7 are complete and user-tested. Phase 8 now provides validation plus explicit backup-and-replace finalization back to the configured source templates.
+Phases 1-8 are complete and user-tested. All major V1 functionality is working. The remaining planned work is a small Phase 9 usability/cleanup pass.
 
 ---
 
@@ -331,9 +331,20 @@ Confirmed working by the user:
 
 ---
 
+### Phase 8
+
+Confirmed working by the user:
+
+- Validate works;
+- Save / Finalize works;
+- finalized source templates are updated correctly;
+- backup-and-replace workflow behaves as intended.
+
+One observed Word edge case in Test Mode: deleting one INFO bookmark's Range removed its text but Word retained the bookmark as a collapsed bookmark. The user accepts this behavior because it mirrors Word/Letter Wizard Range.Delete semantics closely enough for this utility.
+
 ## Known Issues / Risks
 
-### Phase 8 has not been compiled/run by the implementation agent
+### Phase 8 was manually tested by the user
 
 Changes were made directly through GitHub. The user workstation remains the authoritative build/runtime test environment.
 
@@ -401,9 +412,18 @@ Use disposable/copy source templates for the first finalize test.
 
 ## Exact Next Step
 
-**User manually tests Phase 8 using disposable source templates.**
+**Implement Phase 9 — Usability pass.**
 
-If Phase 8 passes, implement **Phase 9 — Usability pass**. Keep it small and driven by issues observed during real template work rather than adding speculative features.
+Keep this intentionally small and driven by real workflow friction. Good candidates:
+
+- simplify/organize the now-crowded main window;
+- make primary actions visually clearer;
+- remember useful window/layout preferences if cheap;
+- improve status/confirmation messaging;
+- optionally surface bookmark text previews if it materially helps;
+- clean up abandoned temp session directories if straightforward.
+
+Do not add speculative architecture or large new features.
 
 ---
 
