@@ -254,16 +254,10 @@ internal sealed class WordSession : IDisposable
             throw;
         }
 
-        bool englishReplaced = false;
-        bool frenchReplaced = false;
-
         try
         {
             File.Copy(EnglishWorkingPath, englishFull, overwrite: true);
-            englishReplaced = true;
-
             File.Copy(FrenchWorkingPath, frenchFull, overwrite: true);
-            frenchReplaced = true;
 
             return new FinalizeResult(englishBackup, frenchBackup);
         }
@@ -273,8 +267,7 @@ internal sealed class WordSession : IDisposable
 
             try
             {
-                if (englishReplaced)
-                    File.Copy(englishBackup, englishFull, overwrite: true);
+                File.Copy(englishBackup, englishFull, overwrite: true);
             }
             catch (Exception ex)
             {
@@ -283,8 +276,7 @@ internal sealed class WordSession : IDisposable
 
             try
             {
-                if (frenchReplaced)
-                    File.Copy(frenchBackup, frenchFull, overwrite: true);
+                File.Copy(frenchBackup, frenchFull, overwrite: true);
             }
             catch (Exception ex)
             {
