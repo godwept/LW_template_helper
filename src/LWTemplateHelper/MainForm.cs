@@ -812,13 +812,12 @@ internal sealed class MainForm : Form
 
             var infoNames = english
                 .Union(french, StringComparer.OrdinalIgnoreCase)
-                .Select(name => new
+                .Where(name => WordSession.TryGetInfoNumber(name, out _))
+                .Select(name =>
                 {
-                    Name = name,
-                    IsInfo = WordSession.TryGetInfoNumber(name, out int number),
-                    Number = number
+                    WordSession.TryGetInfoNumber(name, out int number);
+                    return new { Name = name, Number = number };
                 })
-                .Where(x => x.IsInfo)
                 .OrderBy(x => x.Number)
                 .ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -847,8 +846,9 @@ internal sealed class MainForm : Form
             }
 
             int highestInfo = infoNames.Count == 0 ? 0 : infoNames.Max(x => x.Number);
+            string nextInfo = highestInfo == int.MaxValue ? "unavailable" : $"INFO_{highestInfo + 1}";
             _infoSummary.Text =
-                $"Both: {infoBoth}, mismatch: {infoMismatch} | Next: INFO_{highestInfo + 1}";
+                $"Both: {infoBoth}, mismatch: {infoMismatch} | Next: {nextInfo}";
 
             var infoNameSet = new HashSet<string>(
                 infoNames.Select(x => x.Name),
