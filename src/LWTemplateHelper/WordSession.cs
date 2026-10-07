@@ -4,15 +4,11 @@ using Word = Microsoft.Office.Interop.Word;
 
 namespace LWTemplateHelper;
 
-internal sealed record CapturedSelectionInfo(string Preview, int Start, int End);
-
 internal sealed class WordSession : IDisposable
 {
     private Word.Application? _word;
     private Word.Document? _englishDocument;
     private Word.Document? _frenchDocument;
-    private Word.Range? _englishCapturedRange;
-    private Word.Range? _frenchCapturedRange;
 
     public bool IsOpen => _word is not null;
     public string? SessionDirectory { get; private set; }
@@ -92,18 +88,6 @@ internal sealed class WordSession : IDisposable
         ArrangeSideBySide();
     }
 
-    public CapturedSelectionInfo CaptureEnglishSelection() =>
-        CaptureSelection(_englishDocument, ref _englishCapturedRange, "English");
-
-    public CapturedSelectionInfo CaptureFrenchSelection() =>
-        CaptureSelection(_frenchDocument, ref _frenchCapturedRange, "French");
-
-    public CapturedSelectionInfo? GetEnglishCapturedSelection() =>
-        ReadCapturedSelection(ref _englishCapturedRange);
-
-    public CapturedSelectionInfo? GetFrenchCapturedSelection() =>
-        ReadCapturedSelection(ref _frenchCapturedRange);
-
     public void AddBookmark(string bookmarkName)
     {
         EnsureOpen();
@@ -121,8 +105,8 @@ internal sealed class WordSession : IDisposable
                     $"Bookmark '{bookmarkName}' already exists in at least one working copy. Use Replace Range if you intend to move or repair it.");
             }
 
-            englishRange = GetCapturedRangeDuplicate(ref _englishCapturedRange, "English");
-            frenchRange = GetCapturedRangeDuplicate(ref _frenchCapturedRange, "French");
+            englishRange = GetCurrentSelectionRangeDuplicate(_englishDocument!, "English");
+            frenchRange = GetCurrentSelectionRangeDuplicate(_frenchDocument!, "French");
 
             AddBookmarkMarker(_englishDocument!, bookmarkName, englishRange);
 
@@ -333,26 +317,33 @@ internal sealed class WordSession : IDisposable
             throw new ArgumentException(error, nameof(bookmarkName));
     }
 
-    private static Word.Range GetCapturedRangeDuplicate(
-        ref Word.Range? storedRange,
+    private static Word.Range GetCurrentSelectionRangeDuplicate(
+        Word.Document document,
         string language)
     {
-        if (ReadCapturedSelection(ref storedRange) is null || storedRange is null)
-        {
-            throw new InvalidOperationException(
-                $"Capture a valid {language} selection before performing this bookmark operation.");
-        }
+        Word.Window? window = null;
+        Word.Selection? selection = null;
+        Word.Range? range = null;
 
         try
         {
-            return storedRange.Duplicate;
+            window = GetWindow(document);
+            selection = window.Selection;
+            range = selection.Range;
+
+            if (range.Start >= range.End)
+            {
+                throw new InvalidOperationException(
+                    $"Select the text to bookmark in the {language} working copy first.");
+            }
+
+            return range.Duplicate;
         }
-        catch (COMException)
+        finally
         {
-            ReleaseCom(storedRange);
-            storedRange = null;
-            throw new InvalidOperationException(
-                $"The captured {language} selection is no longer valid. Capture it again.");
+            ReleaseCom(range);
+            ReleaseCom(selection);
+            ReleaseCom(window);
         }
     }
 
@@ -521,90 +512,6 @@ internal sealed class WordSession : IDisposable
         }
     }
 
-    private static CapturedSelectionInfo CaptureSelection(
-        Word.Document? document,
-        ref Word.Range? storedRange,
-        string language)
-    {
-        if (document is null)
-            throw new InvalidOperationException("The Word session is not open.");
-
-        Word.Window? window = null;
-        Word.Selection? selection = null;
-        Word.Range? currentRange = null;
-        Word.Range? duplicate = null;
-
-        try
-        {
-            window = GetWindow(document);
-            selection = window.Selection;
-            currentRange = selection.Range;
-
-            if (currentRange.Start >= currentRange.End)
-                throw new InvalidOperationException(
-                    $"Select the text to capture in the {language} working copy first.");
-
-            duplicate = currentRange.Duplicate;
-            var info = BuildSelectionInfo(duplicate);
-
-            ReleaseCom(storedRange);
-            storedRange = duplicate;
-            duplicate = null;
-
-            return info;
-        }
-        finally
-        {
-            ReleaseCom(duplicate);
-            ReleaseCom(currentRange);
-            ReleaseCom(selection);
-            ReleaseCom(window);
-        }
-    }
-
-    private static CapturedSelectionInfo? ReadCapturedSelection(ref Word.Range? range)
-    {
-        if (range is null)
-            return null;
-
-        try
-        {
-            if (range.Start >= range.End)
-            {
-                ReleaseCom(range);
-                range = null;
-                return null;
-            }
-
-            return BuildSelectionInfo(range);
-        }
-        catch (COMException)
-        {
-            ReleaseCom(range);
-            range = null;
-            return null;
-        }
-    }
-
-    private static CapturedSelectionInfo BuildSelectionInfo(Word.Range range)
-    {
-        string preview = (range.Text ?? string.Empty)
-            .Replace("\r", "¶")
-            .Replace("\a", "¤")
-            .Replace("\v", "↵")
-            .Replace("\t", "→");
-
-        preview = preview.Trim();
-
-        if (preview.Length > 90)
-            preview = preview[..87] + "...";
-
-        if (preview.Length == 0)
-            preview = "(selected range)";
-
-        return new CapturedSelectionInfo(preview, range.Start, range.End);
-    }
-
     private static void PositionNative(Word.Window window, int left, int top, int width, int height)
     {
         var hwnd = new IntPtr(window.Hwnd);
@@ -655,7 +562,6 @@ internal sealed class WordSession : IDisposable
 
     public void Close()
     {
-        ClearCapturedRanges();
         CloseDocument(ref _frenchDocument);
         CloseDocument(ref _englishDocument);
 
@@ -680,15 +586,6 @@ internal sealed class WordSession : IDisposable
         GC.WaitForPendingFinalizers();
         GC.Collect();
         GC.WaitForPendingFinalizers();
-    }
-
-    private void ClearCapturedRanges()
-    {
-        ReleaseCom(_englishCapturedRange);
-        _englishCapturedRange = null;
-
-        ReleaseCom(_frenchCapturedRange);
-        _frenchCapturedRange = null;
     }
 
     private static void CloseDocument(ref Word.Document? document)
