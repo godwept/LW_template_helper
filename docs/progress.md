@@ -334,9 +334,17 @@ Visual test feedback:
 - main-window buttons now use a small custom themed button control that paints disabled states with muted light text and a subdued border/background while preserving real `Enabled = false` behavior;
 - Side by Side / English Focus / French Focus were moved onto the same top action row as Open / Close / Validate / Save, aligned to the far right.
 
-Additional Phase 9 layout commit:
+Additional Phase 9 layout commits:
 
 - top action row alignment: `2fe0c38524f6b13c30564fa8075d09fef3933869`
+- bookmark/test/status alignment refinements: `d13466f34b627fed61f7dbc755703634d3c31b88`
+
+Latest visual refinements:
+
+- Refresh Status is now a compact refresh icon at the top-right of the Bookmark workspace;
+- bookmark editing actions start the action row at the left, with Locate English/French/Both aligned at the far right;
+- Test value label/textbox/Set Value/Delete Content are vertically middle-aligned;
+- bottom session status is now a plain muted label rather than a titled GroupBox.
 
 ---
 
