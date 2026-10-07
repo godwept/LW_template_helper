@@ -180,7 +180,7 @@ Build:
 
 ## Phase 7 — Test Mode
 
-**Status:** Implemented / awaiting user manual test
+**Status:** Complete / user-tested
 
 **Goal:** safely simulate Letter Wizard manipulation.
 
