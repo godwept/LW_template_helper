@@ -10,11 +10,11 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 3 complete and user-tested; ready for Phase 4.
+**Stage:** Phase 4 implemented; awaiting user manual testing.
 
-Phases 1 and 2 are complete and user-tested. Phase 3 now reads bookmark names from the open English/French working documents and compares them with the selected Template Type configuration.
+Phases 1-3 are complete and user-tested. Phase 4 now supports locating existing bookmarks and explicitly capturing independent English/French Word selections for later bookmark operations.
 
-Bookmark discovery/status is read-only. Bookmark creation/editing has not started.
+Bookmark creation/editing has not started.
 
 ---
 
@@ -54,41 +54,62 @@ Implemented:
 
 ### Phase 3 — Bookmark discovery/status
 
-Implemented on 2026-10-07.
+User-tested and complete.
 
-Features:
+Implemented:
 
 - enumerate visible bookmarks from `Working_E.docx`;
 - enumerate visible bookmarks from `Working_F.docx`;
-- compare them case-insensitively against the configured Template Type bookmark list;
-- show EN and FR status for each configured bookmark;
-- show unconfigured bookmarks separately under **Other Bookmarks**;
-- automatically refresh status after opening the working copies;
-- manual **Refresh Status** button;
-- visual status:
-  - green-tinted row = configured bookmark exists in both;
-  - gray row = configured bookmark exists in neither;
-  - red-tinted row = EN/FR mismatch;
-  - yellow-tinted Other Bookmark = unconfigured bookmark exists in both;
-  - red-tinted Other Bookmark = unconfigured EN/FR mismatch;
-- summary counts for both/mismatch/unused/other.
-
-Word hidden/system bookmarks are intentionally excluded from discovery so generated internal bookmarks such as TOC/navigation bookmarks do not flood **Other Bookmarks**.
-
-Important Phase 3 files:
-
-- `src/LWTemplateHelper/WordSession.cs`
-  - `GetBookmarkNames()`
-  - read-only Word bookmark enumeration with COM cleanup
-- `src/LWTemplateHelper/MainForm.cs`
-  - bookmark status grids
-  - Other Bookmarks grid
-  - Refresh Status
-  - mismatch styling and summary
+- compare them case-insensitively against configured bookmarks;
+- show EN/FR status;
+- show **Other Bookmarks**;
+- Refresh Status;
+- clear visual mismatch indication.
 
 Phase 3 implementation commit:
 
 `3ca870fc18830d5e4f6fb77b1abfbc50829c28e1`
+
+### Phase 4 — Locate + selection capture
+
+Implemented on 2026-10-07.
+
+Features:
+
+- click a configured or Other Bookmark row to select that bookmark;
+- **Locate English** selects/highlights that bookmark range in the English working copy;
+- **Locate French** selects/highlights it in the French working copy;
+- **Locate Both** locates the same bookmark in both documents and restores Side by Side;
+- clear message if the selected bookmark does not exist in the requested language;
+- explicit **Capture English** and **Capture French** workflow;
+- captured English/French selections are stored independently as duplicated Word `Range` objects;
+- short previews are shown in the manager;
+- recapturing replaces the previously stored range for that language;
+- collapsed/no-text-cursor selections are rejected;
+- captured ranges are re-checked when bookmark status refreshes;
+- clearly invalid/collapsed captured ranges are discarded;
+- captured COM ranges are explicitly released when replaced or when the Word session closes.
+
+Implementation decision:
+
+Use explicit capture buttons instead of Word selection-change events. This is the least complicated/reliable approach allowed by the design and avoids fragile event handling while switching between two Word windows.
+
+Important files:
+
+- `src/LWTemplateHelper/WordSession.cs`
+  - Locate English/French/Both
+  - captured Word Range storage
+  - capture/read validation
+  - selection preview generation
+- `src/LWTemplateHelper/MainForm.cs`
+  - bookmark-row selection
+  - Locate buttons
+  - Capture buttons
+  - EN/FR selection previews
+
+Phase 4 implementation commit:
+
+`ab3954d30a3214c4763db98b8daaf7f2805a7488`
 
 ---
 
@@ -121,63 +142,86 @@ Confirmed working by the user:
 - configured bookmark EN/FR status matches the open working documents;
 - mismatch highlighting works;
 - Other Bookmarks display works;
-- Refresh Status updates after manual bookmark changes in a working copy;
-- existing Phase 1 Word/session behavior remains intact.
+- Refresh Status updates after manual bookmark changes;
+- existing Word/session behavior remains intact.
+
+### Phase 4
+
+Not yet manually tested.
 
 ---
 
 ## Known Issues / Risks
 
-### Phase 3 has not been compiled/run by the implementation agent
+### Phase 4 has not been compiled/run by the implementation agent
 
-Changes were made directly through GitHub. The user workstation is the authoritative build/runtime test environment.
+Changes were made directly through GitHub. The user workstation remains the authoritative build/runtime test environment.
 
-### Visible bookmarks only
+### Explicit capture is intentional
 
-Phase 3 intentionally reads Word's normal visible bookmark collection. Hidden/system bookmarks are not shown.
+The app does not automatically follow every Word selection change.
 
-If a Letter Wizard template later relies on a hidden bookmark, this decision should be revisited, but visible bookmarks are the expected template-authoring use case.
+Workflow is:
 
-### Status is snapshot-based
+1. select text in the English or French Word working copy;
+2. return to the manager;
+3. click the matching Capture button.
 
-Bookmark status refreshes when the working copies open and when **Refresh Status** is clicked.
+This keeps range capture deterministic and avoids event/lifecycle complexity.
 
-Phase 3 does not subscribe to Word bookmark-change events. Automatic refresh after future app-driven bookmark edits can be added in the relevant editing phases.
+### Stored Word ranges can move with edits
+
+Microsoft Word Range objects can adjust their positions as nearby text is edited. Phase 4 re-checks that captured ranges are still non-collapsed and accessible, but it cannot prove that a heavily edited range still represents the user's original semantic intent.
+
+The preview is therefore important. The user can simply recapture whenever needed.
+
+### Locate Both requires the bookmark in both languages
+
+If a bookmark is missing from one document, Locate Both reports that missing side. The individual Locate English/French commands remain available.
 
 ### No bookmark mutation yet
 
-Phase 3 must remain read-only. Locate, selection capture, add, rename, replace-range, delete, INFO bookmarks, and Test Mode remain future phases.
+Phase 4 does not add, rename, replace, or delete bookmarks. Those belong to Phase 5.
+
+INFO bookmarks and Test Mode also remain future phases.
 
 ---
 
-## Manual Test Checklist — Phase 3
+## Manual Test Checklist — Phase 4
 
 1. Sync latest `main`, build, and run.
-2. Select a Template Type/subtype whose Word files contain known bookmarks.
-3. Click **Open Working Copies**.
-4. Confirm bookmark status populates automatically.
-5. Verify a bookmark present in both documents shows **Exists / Exists**.
-6. Verify a configured bookmark missing from both shows **Missing / Missing**.
-7. Use a pair where one configured bookmark exists in only EN or only FR and confirm the mismatch row is clearly highlighted.
-8. Confirm bookmarks present in Word but absent from the Template Type configuration appear under **Other Bookmarks**.
-9. Make a bookmark change manually in a working Word document, click **Refresh Status**, and confirm the display updates.
-10. Confirm Phase 1 layout/focus/close behavior still works.
-11. Confirm no source document is modified by the status feature.
+2. Open a configured subtype with known bookmarks.
+3. Click a configured bookmark row that exists in both documents.
+4. Click **Locate English** and confirm Word selects/highlights the correct English range.
+5. Click **Locate French** and confirm the correct French range.
+6. Click **Locate Both** and confirm both Word windows retain the bookmark selections in Side by Side view.
+7. Select a bookmark that exists in only one language and confirm the missing-side Locate command gives a clear message.
+8. In the English working copy, manually select a meaningful text range.
+9. Click **Capture English** and confirm the preview shows the selected text.
+10. Repeat with a different range in French and **Capture French**.
+11. Switch between Word windows and use layout/focus commands; confirm both captured previews remain.
+12. Recapture English with different text and confirm only the English preview changes.
+13. Click **Refresh Status** and confirm valid captures remain visible.
+14. Click in Word without selecting text, then try Capture; confirm it rejects the collapsed selection.
+15. Close the Word session and confirm both capture previews reset to **Not captured**.
+16. Confirm no source template is modified by locate/capture operations.
 
 ---
 
 ## Exact Next Step
 
-**Implement Phase 4 — Locate + selection capture**:
+**User manually tests Phase 4.**
 
-- Locate English;
-- Locate French;
-- Locate Both if practical;
-- capture and retain meaningful EN/FR selections;
-- show selection previews;
-- detect clearly invalid/stale selections where practical.
+If Phase 4 passes, implement **Phase 5 — Bookmark creation/editing**:
 
-Do not implement bookmark creation/editing, INFO bookmarks, or Test Mode yet.
+- add configured bookmark around captured EN/FR ranges;
+- delete bookmark markers;
+- replace bookmark ranges;
+- rename bookmarks;
+- auto-refresh status after app-driven operations;
+- guard against duplicates/invalid names.
+
+Do not implement INFO bookmarks or Test Mode yet.
 
 ---
 
@@ -194,4 +238,4 @@ The architecture remains unchanged:
 - JSON configuration;
 - deterministic user-controlled bookmark placement.
 
-Do not introduce custom Word rendering or automatic/fuzzy bookmark placement.
+Do not introduce custom Word rendering, fuzzy matching, or automatic bookmark placement.

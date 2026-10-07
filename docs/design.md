@@ -1,6 +1,6 @@
 # Letter Wizard Template Bookmark Manager — Design
 
-Status: **Accepted architecture; implementation in progress (Phases 1-3 implemented)**
+Status: **Accepted architecture; implementation in progress (Phases 1-4 implemented)**
 
 ## 1. Purpose
 
@@ -236,7 +236,11 @@ When the user clicks a normal bookmark name:
 
 No fuzzy matching or automatic translation alignment is performed.
 
-A later implementation detail will determine whether selections are captured through Word selection-change events, explicit capture buttons, or a hybrid approach. Reliability is more important than avoiding one extra click.
+Selection capture uses explicit **Capture English** and **Capture French** buttons.
+
+The user selects text directly in the appropriate Word working copy, then clicks the matching Capture button in the manager. The manager stores a duplicated Word Range independently for each language and displays a short preview.
+
+This explicit workflow was chosen over Word selection-change events because it is simpler and more reliable while switching between two Word windows.
 
 ---
 
