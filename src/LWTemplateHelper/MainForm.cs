@@ -568,7 +568,6 @@ internal sealed class MainForm : Form
         var type = SelectedType;
 
         _subtypeCombo.Items.Clear();
-        PopulateConfiguredBookmarkRows(type);
         _infoBookmarkGrid.Rows.Clear();
         _infoSummary.Text = "INFO bookmarks: none";
         _otherBookmarkGrid.Rows.Clear();
@@ -579,7 +578,7 @@ internal sealed class MainForm : Form
             _editTypeButton.Enabled = false;
             _newSubtypeButton.Enabled = false;
             _editSubtypeButton.Enabled = false;
-            ClearSubtypeDisplay();
+            SubtypeChanged();
             return;
         }
 
@@ -605,7 +604,14 @@ internal sealed class MainForm : Form
             return;
         }
 
-        foreach (string bookmark in type.Bookmarks)
+        var subtype = SelectedSubtype;
+        if (subtype is null)
+        {
+            _bookmarkSummary.Text = "Create or select a Template Subtype.";
+            return;
+        }
+
+        foreach (string bookmark in type.GetBookmarksForSubtype(subtype))
         {
             int rowIndex = _bookmarkGrid.Rows.Add(bookmark, "—", "—");
             _bookmarkGrid.Rows[rowIndex].DefaultCellStyle.BackColor = AppTheme.PanelBack;
@@ -620,6 +626,8 @@ internal sealed class MainForm : Form
 
     private void SubtypeChanged()
     {
+        ClearSelectedBookmark();
+        PopulateConfiguredBookmarkRows(SelectedType);
         var subtype = SelectedSubtype;
 
         if (subtype is null)
@@ -730,6 +738,8 @@ internal sealed class MainForm : Form
         {
             string bookmarkName = _wordSession.AddNextInfoBookmark();
             RefreshBookmarkStatus();
+            if (_infoBookmarkGrid.Rows.Count > 0)
+                _infoBookmarkGrid.FirstDisplayedScrollingRowIndex = _infoBookmarkGrid.Rows.Count - 1;
             _status.Text = $"Added {bookmarkName} using the current English/French Word selections.";
         }
         catch (Exception ex)
@@ -990,7 +1000,7 @@ internal sealed class MainForm : Form
         int configuredBoth = 0;
         int configuredUnused = 0;
 
-        foreach (string bookmark in type.Bookmarks)
+        foreach (string bookmark in type.GetBookmarksForSubtype(subtype))
         {
             bool en = english.Contains(bookmark);
             bool fr = french.Contains(bookmark);
@@ -1246,7 +1256,7 @@ internal sealed class MainForm : Form
         if (type is null)
             return;
 
-        using var dialog = new TemplateSubtypeDialog();
+        using var dialog = new TemplateSubtypeDialog(type);
         if (dialog.ShowDialog(this) != DialogResult.OK)
             return;
 
@@ -1261,7 +1271,8 @@ internal sealed class MainForm : Form
         {
             Name = dialog.SubtypeName,
             EnglishTemplatePath = dialog.EnglishTemplatePath,
-            FrenchTemplatePath = dialog.FrenchTemplatePath
+            FrenchTemplatePath = dialog.FrenchTemplatePath,
+            Bookmarks = dialog.BookmarkNames.ToList()
         });
 
         if (SaveConfiguration(type))
@@ -1275,7 +1286,7 @@ internal sealed class MainForm : Form
         if (type is null || subtype is null)
             return;
 
-        using var dialog = new TemplateSubtypeDialog(subtype);
+        using var dialog = new TemplateSubtypeDialog(type, subtype);
         if (dialog.ShowDialog(this) != DialogResult.OK)
             return;
 
@@ -1291,6 +1302,7 @@ internal sealed class MainForm : Form
         subtype.Name = dialog.SubtypeName;
         subtype.EnglishTemplatePath = dialog.EnglishTemplatePath;
         subtype.FrenchTemplatePath = dialog.FrenchTemplatePath;
+        subtype.Bookmarks = dialog.BookmarkNames.ToList();
 
         if (SaveConfiguration(type))
             LoadConfigurations(type.Name, subtype.Name);
@@ -1351,7 +1363,8 @@ internal sealed class MainForm : Form
     private void RefreshBookmarkStatus()
     {
         var type = SelectedType;
-        if (type is null || !_wordSession.IsOpen)
+        var subtype = SelectedSubtype;
+        if (type is null || subtype is null || !_wordSession.IsOpen)
             return;
 
         try
@@ -1359,13 +1372,18 @@ internal sealed class MainForm : Form
             var (english, french) = _wordSession.GetBookmarkNames();
             var configured = new HashSet<string>(type.Bookmarks, StringComparer.OrdinalIgnoreCase);
 
+            // Clearing rows resets scrolling; restore each viewport after rebuilding the status grids.
+            var scrollPositions = new[] { _bookmarkGrid, _infoBookmarkGrid, _otherBookmarkGrid }
+                .Select(grid => (Grid: grid, FirstRow: grid.FirstDisplayedScrollingRowIndex))
+                .ToArray();
+
             int both = 0;
             int mismatch = 0;
             int neither = 0;
 
             _bookmarkGrid.Rows.Clear();
 
-            foreach (string bookmark in type.Bookmarks)
+            foreach (string bookmark in type.GetBookmarksForSubtype(subtype))
             {
                 bool enExists = english.Contains(bookmark);
                 bool frExists = french.Contains(bookmark);
@@ -1457,6 +1475,12 @@ internal sealed class MainForm : Form
             _selectedBookmarkIsConfigured = false;
             _selectedBookmarkIsInfo = false;
             UpdateBookmarkActionButtons();
+
+            foreach (var (grid, firstRow) in scrollPositions)
+            {
+                if (firstRow >= 0 && grid.Rows.Count > 0)
+                    grid.FirstDisplayedScrollingRowIndex = Math.Min(firstRow, grid.Rows.Count - 1);
+            }
 
             _bookmarkSummary.Text =
                 $"Configured: {both} both, {mismatch} mismatch, {neither} unused | INFO: {infoNames.Count} | Other: {otherNames.Count}";

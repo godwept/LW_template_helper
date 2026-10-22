@@ -10,13 +10,14 @@ internal sealed class TemplateConfigStore
         PropertyNameCaseInsensitive = true
     };
 
-    public string ConfigDirectory { get; } = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "LWTemplateHelper",
-        "TemplateTypes");
+    public string ConfigDirectory { get; }
 
-    public TemplateConfigStore()
+    public TemplateConfigStore(string? configDirectory = null)
     {
+        ConfigDirectory = configDirectory ?? Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LWTemplateHelper",
+            "TemplateTypes");
         Directory.CreateDirectory(ConfigDirectory);
     }
 
@@ -57,6 +58,12 @@ internal sealed class TemplateConfigStore
 
         string destination = GetPath(config.Name);
         string temporary = destination + ".tmp";
+
+        foreach (var subtype in config.Subtypes)
+        {
+            if (subtype.Bookmarks is not null)
+                subtype.Bookmarks = config.GetBookmarksForSubtype(subtype);
+        }
 
         string json = JsonSerializer.Serialize(config, JsonOptions);
         File.WriteAllText(temporary, json);

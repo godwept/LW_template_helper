@@ -1,6 +1,6 @@
 # Letter Wizard Template Bookmark Manager — Design
 
-Status: **Accepted architecture; V1 feature set implemented through Phase 9; awaiting final usability confirmation**
+Status: **Accepted architecture; implemented through Phase 10 subtype bookmark selection; awaiting manual usability confirmation**
 
 ## 1. Purpose
 
@@ -205,6 +205,8 @@ Example:
 
 A subtype may use only a subset of the Template Type's bookmarks.
 
+**Implemented extension (2026-10-09):** Each subtype has a bookmark checklist. New subtypes start with none selected; legacy configurations retain all master bookmarks until edited. The configured grid and validation use the subtype selection. Known but unselected normal bookmarks are ignored, while Other Bookmarks continues to mean names absent from the Template Type's master list. INFO behavior is unchanged. Saved selections remain explicit: additions to the master list are unchecked for those subtypes, and removed names are cleaned when saving configuration. See [Subtype Bookmark Selection Design](specs/2026-10-09-subtype-bookmarks-design.md) for the approved rules and compatibility behavior.
+
 ### 6.3 Storage
 
 Use simple JSON configuration rather than a database.
@@ -248,7 +250,7 @@ No fuzzy matching or automatic translation alignment is performed.
 
 ## 8. Bookmark list and status
 
-The primary manager view contains the Template Type bookmark list.
+The primary manager view contains only the selected subtype's applicable normal bookmarks, in Template Type master-list order. An explicit empty selection gives an empty configured grid. A legacy subtype with no stored selection uses the full master list until its selection is edited and saved.
 
 Each row should show:
 
@@ -280,6 +282,8 @@ The application must also enumerate bookmarks that exist in either document but 
 Display these separately as **Other Bookmarks**.
 
 This prevents existing or legacy bookmarks from being silently hidden.
+
+Normal bookmarks defined by the Template Type but not selected for the subtype are deliberately ignored by the grids and validation. The user is responsible for choosing the correct subtype bookmarks.
 
 ---
 

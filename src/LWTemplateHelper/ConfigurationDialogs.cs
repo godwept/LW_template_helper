@@ -122,32 +122,60 @@ internal sealed class TemplateSubtypeDialog : Form
     private readonly TextBox _nameBox = new() { Dock = DockStyle.Fill };
     private readonly TextBox _englishPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
     private readonly TextBox _frenchPath = new() { ReadOnly = true, Dock = DockStyle.Fill };
+    private readonly CheckedListBox _bookmarksList = new()
+    {
+        Dock = DockStyle.Fill,
+        CheckOnClick = true,
+        IntegralHeight = false,
+        BackColor = AppTheme.InputBack,
+        ForeColor = AppTheme.Text
+    };
 
     public string SubtypeName { get; private set; } = string.Empty;
     public string EnglishTemplatePath { get; private set; } = string.Empty;
     public string FrenchTemplatePath { get; private set; } = string.Empty;
+    public List<string> BookmarkNames { get; private set; } = [];
 
-    public TemplateSubtypeDialog(TemplateSubtypeConfig? existing = null)
+    public TemplateSubtypeDialog(TemplateTypeConfig type, TemplateSubtypeConfig? existing = null)
     {
         Text = existing is null ? "New Template Subtype" : "Edit Template Subtype";
         StartPosition = FormStartPosition.CenterParent;
         MinimizeBox = false;
         MaximizeBox = false;
-        Size = new Size(720, 260);
-        MinimumSize = new Size(620, 250);
+        Size = new Size(720, 480);
+        MinimumSize = new Size(620, 400);
 
         var root = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
             Padding = new Padding(12),
             ColumnCount = 1,
-            RowCount = 4,
-            AutoSize = true
+            RowCount = 6
         };
+
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         root.Controls.Add(BuildTextRow("Subtype name", _nameBox, null));
         root.Controls.Add(BuildTextRow("English template", _englishPath, () => Browse(_englishPath)));
         root.Controls.Add(BuildTextRow("French template", _frenchPath, () => Browse(_frenchPath)));
+        root.Controls.Add(new Label
+        {
+            Text = "Bookmarks for this subtype",
+            AutoSize = true,
+            Margin = new Padding(3, 12, 3, 3)
+        });
+        root.Controls.Add(_bookmarksList);
+
+        var selected = new HashSet<string>(
+            existing is null ? [] : type.GetBookmarksForSubtype(existing),
+            StringComparer.OrdinalIgnoreCase);
+        foreach (string bookmark in type.Bookmarks)
+            _bookmarksList.Items.Add(bookmark, selected.Contains(bookmark));
 
         var buttons = new FlowLayoutPanel
         {
@@ -239,6 +267,7 @@ internal sealed class TemplateSubtypeDialog : Form
         SubtypeName = name;
         EnglishTemplatePath = _englishPath.Text;
         FrenchTemplatePath = _frenchPath.Text;
+        BookmarkNames = _bookmarksList.CheckedItems.Cast<string>().ToList();
         DialogResult = DialogResult.OK;
         Close();
     }

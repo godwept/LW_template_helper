@@ -252,6 +252,18 @@ Avoid polishing features that do not materially speed template work.
 
 ---
 
+## Phase 10 — Subtype bookmark selection
+
+**Status:** Implemented; 15 local regression checks and Release build pass; awaiting user manual testing.
+
+**Goal:** Configure each subtype's applicable normal bookmarks and show/validate only those selections. New subtypes start with none selected; legacy subtypes retain all master bookmarks until edited. Known unselected bookmarks are ignored. Other Bookmarks retains its master-list meaning and INFO behavior remains unchanged.
+
+Approved design: [Subtype Bookmark Selection](specs/2026-10-09-subtype-bookmarks-design.md).
+
+Detailed tasks and verification: [Subtype Bookmark Selection Implementation Plan](plans/2026-10-09-subtype-bookmarks.md).
+
+---
+
 ## Future / optional
 
 Not required for first functional release:

@@ -1,6 +1,6 @@
 # Development Progress
 
-**Last updated:** 2026-10-07
+**Last updated:** 2026-10-20
 
 This file is the primary handoff source for continuing development.
 
@@ -10,13 +10,73 @@ Any agent resuming work should read this file first, then `docs/design.md` and `
 
 ## Current State
 
-**Stage:** Phase 9 usability redesign implemented; awaiting user visual/manual testing.
+**Stage:** Phase 10 subtype bookmark selection implemented and locally verified; awaiting user manual testing.
+
+**Latest investigation (2026-10-20):** User identified the missing name as `educationAllowance` and thinks it is missing from both lists. Read-only inspection of the saved LWOP configuration confirms it is master entry 84 of 84, selected by none of the ten subtypes. It should be the final unchecked entry in Edit Subtype; the main grid excludes it until selected and saved. No application changes made and no UI defect reproduced. All 15 existing regression checks passed during the initial investigation. Next step: manually check the bottom of the LWOP subtype checklist, select the name, and save; if absent there, inspect the running application's version/configuration location.
+
+**Latest enhancement:** Subtypes now store their applicable normal bookmarks and offer a checklist in New/Edit Subtype. New subtypes start with none selected; legacy missing/null selections retain all master bookmarks until edited and saved. Configured rows/counts/validation use the selected subtype's list. Known unselected bookmarks are ignored without reporting; Other Bookmarks retains its master-list meaning and INFO behavior is unchanged. See `docs/specs/2026-10-09-subtype-bookmarks-design.md` and `docs/plans/2026-10-09-subtype-bookmarks.md`.
 
 Phases 1-8 are complete and user-tested. Phase 9 now applies the requested layout and visual cleanup without changing bookmark/document behavior.
+
+The latest fix preserves all three bookmark-grid scroll positions across status refreshes. After **Add INFO**, the INFO grid scrolls to the last row so the new bookmark is visible. The application builds successfully and the isolated WinForms regression checks pass; the user has not yet manually tested this fix with Word.
 
 ---
 
 ## Completed
+
+### New master bookmark visibility investigation — 2026-10-20
+
+- Inspected `TemplateSubtypeDialog`, `MainForm.EditTemplateType`/configuration reload/grid population, `TemplateTypeConfig.GetBookmarksForSubtype`, and `TemplateConfigStore.Save` against the approved subtype-selection design.
+- Confirmed intended behavior: Edit Subtype lists all current master bookmarks, including additions; a saved explicit selection does not inherit new names into the main configured grid. The user must check the new name in Edit Subtype and save to include it in that grid.
+- User subsequently identified `educationAllowance` and thinks it is absent from both lists. Read-only inspection of `%LOCALAPPDATA%\LWTemplateHelper\TemplateTypes\LWOP.json` confirms the name is the final master entry (84 of 84) and selected by none of the ten subtypes. The user's configuration was not modified. How the name was added and the running application's version remain unconfirmed; sandboxed process inspection was denied.
+- Changed only this handoff document; preserved existing uncommitted Phase 10 work. No architecture or selection-policy changes.
+- Verification: `dotnet run --project tests/BookmarkConfigurationRegression/BookmarkConfigurationRegression.csproj` passes all 3 checks; `dotnet run --project tests/BookmarkGridRegression/BookmarkGridRegression.csproj` passes all 12 checks; `git diff --check` passes. Initial sandboxed .NET startup failed with access denied; both runners succeeded outside the sandbox. No application build or real Word/manual test performed in this investigation.
+- Exact next step: select LWOP and the intended subtype, open Edit Subtype, scroll to the bottom for the unchecked `educationAllowance` entry, check it and save. If absent there, restart the app to reload configuration and inspect the running application's version/configuration location before changing code. No new test/build runs in the follow-up; evidence is the saved configuration and checklist population code, not a live inspection of the user's dialog.
+
+### Phase 10 — Subtype bookmark selection implemented — 2026-10-09
+
+- Implemented the approved plan after the user's explicit instruction to implement. New subtypes begin with an explicit empty bookmark selection; older JSON files keep null selections that resolve to all current master names until subtype editing saves an explicit list.
+- Added the subtype checklist with master ordering, case-insensitive restored selections, and a resizable dark dialog. Save returns a copied list; Cancel leaves the supplied subtype unchanged. An empty checklist is valid.
+- Subtype switching updates configured rows before opening Word and clears stale bookmark selection. Refresh counts and validation use only applicable names. Known unselected document bookmarks are excluded from all three grids and validation; genuinely unknown names remain Other Bookmarks.
+- Preserved INFO discovery, numbering, discrepancy warnings, and Add INFO scrolling. English-only `salutation` retains its existing French-missing warning. Existing Word/document operations are unchanged.
+- Saved explicit selections do not inherit master additions. Saving configuration prunes removed/renamed master names, restores master casing/order, and preserves legacy null and explicit empty states.
+- Important production files/classes: `src/LWTemplateHelper/TemplateModels.cs` (`TemplateSubtypeConfig.Bookmarks`, `TemplateTypeConfig.GetBookmarksForSubtype`); `TemplateConfigStore.cs` (selection cleanup and optional isolated config directory for checks); `ConfigurationDialogs.cs` (`TemplateSubtypeDialog` checklist/results/layout); `MainForm.cs` (Create/Edit, subtype switching, filtered status/validation).
+- Important checks: `tests/BookmarkConfigurationRegression/BookmarkConfigurationRegression.csproj` and `Program.cs` use the real JSON store with fixtures under ignored build output; `tests/BookmarkGridRegression/Program.cs` and `TestServices.cs` exercise the actual WinForms UI with in-memory services. No tests read/write user configuration or open Word documents.
+- Verification: `dotnet run --project tests/BookmarkConfigurationRegression/BookmarkConfigurationRegression.csproj` passes 3 checks; `dotnet run --project tests/BookmarkGridRegression/BookmarkGridRegression.csproj` passes 12 checks; `dotnet build LWTemplateHelper.sln --configuration Release` succeeds with zero warnings/errors. `git diff --check` passes. New checks failed before their corresponding implementation changes; the original scroll checks remain passing.
+- Decision: the shortened-list check verifies a legal visible viewport instead of requiring the last row to stay at the top, because WinForms normalizes scrolling when every remaining row fits. No further production scrolling change was necessary.
+- Known issue/testing status: no failures remain in local verification. Real Word/manual UI confirmation is pending. The user has not reported manually testing Phase 10 or the earlier scroll fix.
+- Recommended next step: rebuild/run, edit a legacy subtype to select a subset, verify the grid on switching/restart, and verify unchecked-known versus unknown/INFO behavior with disposable Word templates. See the saved plan's manual acceptance checklist.
+
+### Subtype bookmark selection implementation plan — 2026-10-09
+
+- Saved `docs/plans/2026-10-09-subtype-bookmarks.md` with 12 small tasks, exact source/test paths, test-first cases, verification commands, and manual acceptance checks.
+- The plan preserves legacy null selections, uses explicit empty selections for new subtypes, filters configured rows/validation, and leaves Other/INFO classification independent of subtype choices.
+- Reuses the existing WinForms regression executable and specifies a small package-free real-JSON-store runner with isolated fixture paths. No new application framework or Word integration changes are planned.
+- Added a Phase 10 entry to `docs/implementation-plan.md`; updated this handoff. Only documentation changed in this planning session.
+- Verification: checked plan against the current model, configuration dialog/store, MainForm call sites, existing regression runner, and approved design; `git diff --check` passes. No new runtime tests or user manual test results in this session.
+- Known issue/status: implementation has not started; plan awaits review/approval. The earlier bookmark-grid scroll fix still awaits user confirmation with Word.
+- Recommended next step: review/approve the saved implementation plan, then execute its tasks.
+
+### Subtype bookmark selection design — 2026-10-09
+
+- Approved a checklist in subtype configuration drawn from the Template Type's master bookmark list.
+- New subtypes start with **none selected** (the user corrected their earlier all-selected preference). Legacy subtypes retain all bookmarks until edited and saved; saved selections stay explicit and allow an empty list.
+- The configured grid and configured-bookmark validation will use the subtype selection. Known unselected bookmarks will be ignored without reporting; Other Bookmarks will continue to contain only names absent from the master list. INFO behavior remains unchanged.
+- English-only `salutation` keeps the existing French-missing warning; the user accepts it. No language-specific configuration or new required-bookmark rules are needed.
+- Newly added master bookmarks remain unchecked for subtypes with saved selections. Removed master names are removed from selections. Checklist changes do not modify Word documents.
+- Files changed in this design session: `docs/specs/2026-10-09-subtype-bookmarks-design.md`, `docs/design.md`, and `docs/progress.md`. No implementation changes or new runtime verification in this session.
+- Known issue/testing status: subtype selection is not implemented yet. The earlier scroll fix still awaits user confirmation with Word; no new manual test results were reported.
+- Recommended next step: use the write-plan skill with the approved subtype-selection design to produce an implementation plan.
+
+### Bookmark-grid scrolling — 2026-10-09
+
+- Root cause: `MainForm.RefreshBookmarkStatus()` cleared and rebuilt each grid's rows without restoring its viewport, resetting scrolling to the first row. `AddInfoBookmark()` refreshed status without scrolling to the newly appended INFO row.
+- Fix: capture each grid's first displayed row before rebuilding, restore it after the refresh, and clamp it to the remaining rows when a list shrinks. Empty grids are skipped. After Add INFO, explicitly scroll the INFO grid to the last row.
+- Important files: `src/LWTemplateHelper/MainForm.cs`; `tests/BookmarkGridRegression/Program.cs`, `TestServices.cs`, and `BookmarkGridRegression.csproj`.
+- Decision: keep the change in the WinForms UI; Word bookmark operations and the architecture remain unchanged. The focused regression executable uses the actual form/grid code with in-memory Word/configuration services and does not open documents or change user configuration.
+- Verification: all three regression cases failed before the fix and passed afterward: Add Bookmark preserves each grid's position; Add INFO reveals the final row and preserves the other grids; refresh handles shortened/empty lists.
+- Commands: `dotnet run --project tests/BookmarkGridRegression/BookmarkGridRegression.csproj`; `dotnet build LWTemplateHelper.sln --configuration Release` (zero warnings/errors).
+- User testing: the user reported the scrolling issue during bookmark creation. The new fix still needs manual confirmation with real Word selections.
 
 ### Phase 1 — Application shell + Word control
 
@@ -495,7 +555,22 @@ Use disposable/copy source templates for the first finalize test.
 
 ## Exact Next Step
 
-**User syncs and visually/manual-tests the Phase 9 UI redesign.**
+**Rebuild/run the app and manually confirm Phase 10 subtype bookmark selection with disposable Word templates.**
+
+1. Open Edit Subtype for an existing configuration: all bookmarks are initially checked. Select a subset, save, and confirm only that subset appears in the main grid.
+2. Create a new subtype: none are checked. Confirm saving an empty selection is allowed. Edit it to select bookmarks, switch subtypes, and restart to verify persistence and independent selections.
+3. Open working copies containing a known unchecked bookmark, an unknown bookmark, and INFO bookmarks. Confirm the unchecked known name is ignored, the unknown name remains Other, and INFO remains separate. Validate and confirm selected English-only `salutation` retains its warning.
+4. Check the subtype dialog at normal/minimum sizes and confirm existing session-based editing restrictions. Master additions stay unchecked for saved selections, and removed names disappear after saving.
+
+All implementation tasks are complete. The plan's full manual acceptance checklist is in `docs/plans/2026-10-09-subtype-bookmarks.md`.
+
+The earlier bookmark-grid scroll fix also awaits user confirmation with real Word selections:
+
+1. Use a configured bookmark list long enough to scroll. Scroll midway down, select a missing bookmark, select the English/French ranges in Word, and click **Add Bookmark**. Confirm the configured grid stays at the same position.
+2. With a long INFO list, scroll midway down and click **Add INFO** using new English/French selections. Confirm the INFO grid moves to the bottom and the newly added bookmark is visible; the configured/Other grids retain their positions.
+3. Click **Refresh Status** and confirm each grid retains its current position. Check deleting the final INFO row and refreshing an empty INFO list still works.
+
+Continue the remaining Phase 9 visual/manual checks:
 
 Check:
 

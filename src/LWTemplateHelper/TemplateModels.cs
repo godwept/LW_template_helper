@@ -8,6 +8,15 @@ internal sealed class TemplateTypeConfig
     public List<string> Bookmarks { get; set; } = [];
     public List<TemplateSubtypeConfig> Subtypes { get; set; } = [];
 
+    public List<string> GetBookmarksForSubtype(TemplateSubtypeConfig subtype)
+    {
+        if (subtype.Bookmarks is null)
+            return Bookmarks.ToList();
+
+        var selected = new HashSet<string>(subtype.Bookmarks, StringComparer.OrdinalIgnoreCase);
+        return Bookmarks.Where(selected.Contains).ToList();
+    }
+
     public override string ToString() => Name;
 }
 
@@ -16,6 +25,9 @@ internal sealed class TemplateSubtypeConfig
     public string Name { get; set; } = string.Empty;
     public string EnglishTemplatePath { get; set; } = string.Empty;
     public string FrenchTemplatePath { get; set; } = string.Empty;
+
+    // Null preserves the full master list for configurations created before subtype selections.
+    public List<string>? Bookmarks { get; set; }
 
     public override string ToString() => Name;
 }
